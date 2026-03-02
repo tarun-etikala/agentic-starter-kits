@@ -18,16 +18,6 @@ def ai_stream_service(
         base_url=base_url,
     )
 
-    # def get_database_uri():
-    #     db_details = client.connections.get_details(postgres_db_connection_id)
-    #     db_credentials = db_details["entity"]["properties"]
-    #     db_host = db_credentials["host"]
-    #     db_port = db_credentials["port"]
-    #     db_name = db_credentials["database"]
-    #     db_username = db_credentials["username"]
-    #     db_password = db_credentials["password"]
-    #     return f"postgresql://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}"
-
     DB_URI = get_database_uri()
 
     with PostgresSaver.from_conn_string(DB_URI) as saver:
