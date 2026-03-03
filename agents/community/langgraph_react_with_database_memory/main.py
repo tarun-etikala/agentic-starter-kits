@@ -7,8 +7,11 @@ from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, System
 from pydantic import BaseModel
 from langgraph.checkpoint.postgres import PostgresSaver
 
-from langgraph_react_with_database_memory.agent import get_graph_closure
-from langgraph_react_with_database_memory.utils import get_env_var, get_database_uri
+from langgraph_react_with_database_memory_base.agent import get_graph_closure
+from langgraph_react_with_database_memory_base.utils import (
+    get_env_var,
+    get_database_uri,
+)
 
 
 # Request/Response models
@@ -123,9 +126,7 @@ async def chat(request: ChatRequest):
             # Invoke agent with optional thread configuration
             if request.thread_id:
                 config = {"configurable": {"thread_id": request.thread_id}}
-                result = await agent.ainvoke(
-                    {"messages": messages}, config=config
-                )
+                result = await agent.ainvoke({"messages": messages}, config=config)
             else:
                 result = await agent.ainvoke({"messages": messages})
 

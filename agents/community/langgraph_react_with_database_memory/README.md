@@ -294,24 +294,32 @@ oc login -u "login" -p "password" https://your-cluster:111
 docker login -u='login' -p='password' quay.io
 ```
 
-### Step 3: Build and Deploy
-
-(Note: Deployment scripts may need to be created or adapted from base agent)
+Make deploy file executable
 
 ```bash
-# Build container
-docker build -t <YOUR_CONTAINER_IMAGE> .
-
-# Push to registry
-docker push <YOUR_CONTAINER_IMAGE>
-
-# Deploy to OpenShift (adapt deployment manifests as needed)
-oc apply -f k8s/
+chmod +x deploy.sh
 ```
 
-### Step 4: Test Deployment
+Build image and deploy Agent
 
-Send a test request with thread ID:
+```bash
+./deploy.sh
+```
+
+This will:
+
+- Create Kubernetes secret for API key
+- Build and push the Docker image
+- Deploy the agent to OpenShift
+- Create Service and Route
+
+COPY the route URL and PASTE into the CURL below
+
+```bash
+oc get route langgraph-db-memory -o jsonpath='{.spec.host}'
+```
+
+Send a test request:
 
 ```bash
 curl -X POST https://<YOUR_ROUTE_URL>/chat \

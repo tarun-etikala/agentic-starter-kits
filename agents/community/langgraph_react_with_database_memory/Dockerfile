@@ -17,12 +17,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy the application code
 COPY main.py .
-COPY examples/ai_service.py .
-COPY utils.py .
 COPY src/ ./src/
 
-# Change ownership of the app directory to the non-privileged user
-RUN chown -R appuser:appuser /app
+# Create data directory for vector store
+RUN mkdir -p /app/data && \
+    chown -R appuser:appuser /app
 
 # Switch to non-privileged user
 USER appuser

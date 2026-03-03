@@ -66,8 +66,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Get the root directory of the repository (3 levels up from script)
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
-# Copy utils.py to the destination
-cp "$ROOT_DIR/utils.py" "$SCRIPT_DIR/src/langgraph_react_with_database_memory/" && echo "Utils.py copied to destination"
 
 echo "Agent initialized successfully"
 echo "Configuration validated:"
