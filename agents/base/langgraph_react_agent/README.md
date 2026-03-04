@@ -27,7 +27,7 @@ Go to agent dir
 cd agents/base/langgraph_react_agent
 ```
 
-Copy .env file
+Change the name of .env file
 
 ```bash
 mv template.env .env

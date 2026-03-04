@@ -278,7 +278,8 @@ class AIAgent:
                     # No Action: line – treat the whole response as the final answer
                     return result.strip() if result else None
 
-        except Exception:
+        except Exception as e:
+            print(f"Agent error: {e}")
             return None
 
         return None

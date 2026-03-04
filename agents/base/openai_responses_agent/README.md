@@ -19,28 +19,23 @@ OpenAI or any compatible API.
 - Choose **local** or **RH OpenShift Cluster** and fill the needed values
 - Run `./init.sh` to load values from `.env` into the environment
 
-Copy `.env` file:
+Go to agent dir:
 
 ```bash
-cp template.env agents/base/openai_responses_agent/.env
+cd agents/base/openai_responses_agent
 ```
 
-#### Local
+Change the name of .env file
+
+```bash
+mv template.env .env
+```
+
+#### Local but with a use of OpenAI API
 
 Edit the `.env` file with your local configuration:
 
-```
-BASE_URL=http://localhost:8321
-MODEL_ID=ollama/llama3.2:3b
-API_KEY=not-needed
-CONTAINER_IMAGE=not-needed
-```
-
-> **Local setup (Ollama):** Port and model name can differ depending on your setup (e.g. Llama Stack on port 8321 vs
-> Ollama on 11434, or a different model ID). Check your running services and `run_llama_server.yaml` (if using Llama
-> Stack) and set `BASE_URL` and `MODEL_ID` accordingly.
-
-Or for **OpenAI API** directly:
+**OpenAI API** directly:
 
 ```
 BASE_URL=https://api.openai.com/v1
@@ -76,12 +71,6 @@ CONTAINER_IMAGE=quay.io/your-username/openai-responses-agent:latest
     - Docker Hub: `docker.io/your-username/openai-responses-agent:latest`
     - GHCR: `ghcr.io/your-org/openai-responses-agent:latest`
 
-Go to agent dir:
-
-```bash
-cd agents/base/openai_responses_agent
-```
-
 Create and activate a virtual environment (Python 3.12) in this directory using [uv](https://docs.astral.sh/uv/):
 
 ```bash
@@ -100,7 +89,7 @@ chmod +x init.sh
 Load values from `.env` into environment variables:
 
 ```bash
-./init.sh
+source ./init.sh
 ```
 
 ---
@@ -185,7 +174,7 @@ oc get route openai-responses-agent -o jsonpath='{.spec.host}'
 Send a test request:
 
 ```bash
-curl -X POST https://<YOUR_ROUTE_URL>/chat \
+curl -X POST https://openai-responses-agent-tguzik-agents.apps.rosa.ai-eng-gpu.socc.p3.openshiftapps.com/chat \
   -H "Content-Type: application/json" \
   -d '{"message": "How much does a Lenovo Laptop cost and what are the reviews?"}'
 ```
