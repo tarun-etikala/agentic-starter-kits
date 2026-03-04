@@ -16,14 +16,20 @@ Agent built on LlamaIndex that uses a web search tool to query the internet and 
 
 ### Preconditions:
 
-- You need to copy/paste .env file and change its values to yours
+- You need to change .env.template file to .env
 - Decide what way you want to go `local` or `RH OpenShift Cluster` and fill needed values
 - use `./init.sh` that will add those values from .env to environment variables
+
+Go to agent dir
+
+```bash
+cd agents/base/llamaindex_websearch_agent
+```
 
 Copy .env file
 
 ```bash
-cp template.env agents/base/llamaindex_websearch_agent/.env
+mv template.env .env
 ```
 
 #### Local
@@ -63,12 +69,6 @@ CONTAINER_IMAGE=quay.io/your-username/llamaindex-websearch-agent:latest
     - Docker Hub: `docker.io/your-username/llamaindex-websearch-agent:latest`
     - GHCR: `ghcr.io/your-org/llamaindex-websearch-agent:latest`
 
-Go to agent dir
-
-```bash
-cd agents/base/llamaindex_websearch_agent
-```
-
 Create and activate a virtual environment (Python 3.12) in this directory using [uv](https://docs.astral.sh/uv/):
 
 ```bash
@@ -87,7 +87,7 @@ chmod +x init.sh
 Add to values from .env to environment variables
 
 ```bash
-./init.sh
+source ./init.sh
 ```
 
 ---
@@ -186,7 +186,7 @@ Send a test request:
 ```bash
 curl -X POST https://<YOUR_ROUTE_URL>/chat \
   -H "Content-Type: application/json" \
-  -d '{"message": "What is LangChain?"}'
+  -d '{"message": "Which company is consider the best?"}'
 ```
 
 ---

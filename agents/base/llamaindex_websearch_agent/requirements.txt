@@ -1,11 +1,12 @@
 fastapi>=0.135.1
 uvicorn[standard]>=0.41.0
+llama-index>=0.14.15
+llama-index-llms-openai-like>=0.5.3
+llama-index-utils-workflow>=0.5.2
 langchain>=1.2.10
 langchain-openai>=1.1.10
 langgraph-prebuilt>=1.0.7
 llama-stack>=0.5.1
-openai>=2.24.0
-milvus-lite==2.5.1
-python-dotenv>=1.2.2
-pytest>=9.0.2
+milvus-lite>=2.5.1
 setuptools>=80.9.0,<82.0.0
+python-dotenv>=1.2.2
