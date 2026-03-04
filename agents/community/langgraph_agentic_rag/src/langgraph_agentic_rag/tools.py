@@ -40,13 +40,21 @@ def get_retriever_components(
         api_key=getenv("API_KEY"),
     )
 
-    # Get the vector store ID
+    # Get the vector store ID by name
     vector_store_list = client.vector_stores.list()
+    vector_store_id = None
 
     for vs in vector_store_list.data:
         if vs.name == vector_store_name:
             print(f"Your Vector Store: {vs.id} ({vs.name})")
             vector_store_id = vs.id
+
+    if not vector_store_id:
+        available = [f"{vs.name} ({vs.id})" for vs in vector_store_list.data]
+        raise RuntimeError(
+            f"Vector store '{vector_store_name}' not found. "
+            f"Available: {available}. Run load_documents.py first."
+        )
 
     # Cache the components
     _client_cache = client
@@ -105,7 +113,7 @@ def retriever_tool(query: str) -> str:
     for i, chunk in enumerate(response.chunks, 1):
         # Skip chunks that are empty or just separators/whitespace
         content = chunk.content.strip()
-        if not content or all(c in "=-_*#" for c in content):
+        if not content or all(c in "=-_*#|" for c in content):
             continue
 
         # Extract source from chunk metadata (Pydantic object)

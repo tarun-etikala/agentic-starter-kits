@@ -91,7 +91,7 @@ def load_and_index_documents(
     chunks = []
     for doc in all_chunks:
         content = doc.page_content.strip()
-        if content and not all(c in "=-_*#\n\r\t " for c in content):
+        if content and not all(c in "=-_*#|\n\r\t " for c in content):
             chunks.append(content)
     print(f"Created {len(chunks)} chunks (filtered out empty/separator chunks)")
 
@@ -130,8 +130,6 @@ def load_and_index_documents(
         chunks=formatted_chunks,
         vector_store_id=vector_store.id,
     )
-
-    print("\n =")
 
 
 if __name__ == "__main__":
