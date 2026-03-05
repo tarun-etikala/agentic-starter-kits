@@ -1,0 +1,23 @@
+name: openai-responses-agent
+displayName: OpenAI Responses Agent
+description: >
+  Minimal agent with no framework: only the OpenAI Python client and an
+  Action/Observation loop with tools. Use with OpenAI or any compatible API.
+framework: openai
+tier: base
+version: "0.1.0"
+
+env:
+  required:
+    - API_KEY
+    - BASE_URL
+    - MODEL_ID
+  optional: []
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"

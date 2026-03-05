@@ -1,0 +1,65 @@
+# Default values for agent chart
+
+replicaCount: 1
+
+image:
+  repository: ""
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+containerPort: 8080
+
+env:
+  PORT: "8080"
+  BASE_URL: ""
+  MODEL_ID: ""
+
+# Extra environment variables (agent-specific)
+extraEnv: []
+#  - name: EMBEDDING_MODEL
+#    value: "text-embedding-3-small"
+
+# Secret containing API_KEY
+secret:
+  create: true
+  name: ""
+  apiKey: ""
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 120
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 30
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+route:
+  enabled: true
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+# Volume mounts (e.g. for vector store)
+volumes: []
+volumeMounts: []

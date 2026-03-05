@@ -1,0 +1,23 @@
+name: llamaindex-websearch-agent
+displayName: LlamaIndex WebSearch Agent
+description: >
+  Agent built on LlamaIndex that uses a web search tool to query the internet
+  and use the results in its answers.
+framework: llamaindex
+tier: base
+version: "0.1.0"
+
+env:
+  required:
+    - API_KEY
+    - BASE_URL
+    - MODEL_ID
+  optional: []
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"

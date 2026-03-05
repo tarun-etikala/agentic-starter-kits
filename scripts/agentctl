@@ -1,0 +1,333 @@
+#!/usr/bin/env bash
+#
+# agentctl — CLI for managing Agentic Starter Kit agents on OpenShift
+#
+# Usage:
+#   agentctl deploy <image> [--namespace <ns>] [--agent <dir>]   Deploy agent to cluster
+#   agentctl destroy <release> [--namespace <ns>]                Remove agent from cluster
+#   agentctl list [--all-namespaces]                             List deployed agents
+#   agentctl status <release> [--namespace <ns>]                 Show agent status
+#
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+CHART_DIR="$PROJECT_ROOT/charts/agent"
+AGENTS_DIR="$PROJECT_ROOT/agents"
+
+# ── helpers ───────────────────────────────────────────────────────────
+
+usage() {
+  cat <<EOF
+agentctl — CLI for managing Agentic Starter Kit agents on OpenShift
+
+Usage:
+  agentctl deploy <image> [options]     Deploy an agent to the cluster
+  agentctl destroy <release> [options]  Remove an agent from the cluster
+  agentctl list [options]               List deployed agents
+  agentctl status <release> [options]   Show agent status and metadata
+
+Deploy options:
+  --namespace, -n <ns>       Target namespace (default: current project)
+  --agent, -a <path>         Agent directory relative to agents/ (e.g. langgraph/react_agent)
+  --release, -r <name>       Helm release name (default: derived from image name)
+  --set <key=value>          Pass additional Helm --set flags
+
+Destroy options:
+  --namespace, -n <ns>       Target namespace (default: current project)
+
+List options:
+  --all-namespaces, -A       List agents across all namespaces
+
+Status options:
+  --namespace, -n <ns>       Target namespace (default: current project)
+
+Examples:
+  agentctl deploy quay.io/team/react-agent:v1 -n dev-sandbox
+  agentctl deploy quay.io/team/rag-agent:v1 -a langgraph/agentic_rag
+  agentctl list
+  agentctl status react-agent -n dev-sandbox
+  agentctl destroy react-agent -n dev-sandbox
+EOF
+  exit 1
+}
+
+require_tool() {
+  local tool="$1"
+  if ! command -v "$tool" &>/dev/null; then
+    echo "Error: '$tool' is not installed or not in PATH."
+    case "$tool" in
+      helm) echo "Install: https://helm.sh/docs/intro/install/" ;;
+      oc)   echo "Install: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/" ;;
+    esac
+    exit 1
+  fi
+}
+
+require_oc_login() {
+  if ! oc whoami &>/dev/null; then
+    echo "Error: Not logged into an OpenShift cluster."
+    echo "Run: oc login <cluster-url>"
+    exit 1
+  fi
+}
+
+# Derive a release name from the container image
+# e.g. quay.io/team/my-react-agent:v1 → my-react-agent
+release_name_from_image() {
+  local image="$1"
+  # Strip tag
+  local name="${image%%:*}"
+  # Strip registry/org prefix — keep only the last path segment
+  name="${name##*/}"
+  echo "$name"
+}
+
+# ── deploy ────────────────────────────────────────────────────────────
+
+cmd_deploy() {
+  require_tool helm
+  require_tool oc
+  require_oc_login
+
+  local IMAGE=""
+  local NAMESPACE=""
+  local AGENT_DIR=""
+  local RELEASE=""
+  local EXTRA_SETS=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --namespace|-n) NAMESPACE="$2"; shift 2 ;;
+      --agent|-a)     AGENT_DIR="$2"; shift 2 ;;
+      --release|-r)   RELEASE="$2"; shift 2 ;;
+      --set)          EXTRA_SETS+=("--set" "$2"); shift 2 ;;
+      -*)             echo "Unknown option: $1"; exit 1 ;;
+      *)              IMAGE="$1"; shift ;;
+    esac
+  done
+
+  if [[ -z "$IMAGE" ]]; then
+    echo "Error: Container image is required."
+    echo "Usage: agentctl deploy <image> [--namespace <ns>] [--agent <dir>]"
+    exit 1
+  fi
+
+  # Derive release name
+  if [[ -z "$RELEASE" ]]; then
+    RELEASE=$(release_name_from_image "$IMAGE")
+  fi
+
+  # Namespace handling
+  local NS_FLAG=""
+  if [[ -n "$NAMESPACE" ]]; then
+    NS_FLAG="--namespace $NAMESPACE"
+    # Create namespace/project if it doesn't exist
+    oc get namespace "$NAMESPACE" &>/dev/null 2>&1 || oc new-project "$NAMESPACE" 2>/dev/null || true
+  fi
+
+  local CLUSTER
+  CLUSTER=$(oc whoami --show-server)
+
+  echo ""
+  echo "========================================"
+  echo "  Deploying Agent to OpenShift"
+  echo "========================================"
+  echo ""
+  echo "  Cluster:   $CLUSTER"
+  echo "  Namespace: ${NAMESPACE:-$(oc project -q)}"
+  echo "  Release:   $RELEASE"
+  echo "  Image:     $IMAGE"
+  echo ""
+
+  # Build Helm args
+  local HELM_ARGS=(
+    "--set" "image.repository=${IMAGE%%:*}"
+    "--set" "image.tag=${IMAGE##*:}"
+  )
+
+  # If an agent directory is specified, use its values.yaml
+  if [[ -n "$AGENT_DIR" ]]; then
+    local AGENT_VALUES="$AGENTS_DIR/$AGENT_DIR/values.yaml"
+    if [[ -f "$AGENT_VALUES" ]]; then
+      echo "  Using agent values: $AGENT_DIR/values.yaml"
+      HELM_ARGS+=("-f" "$AGENT_VALUES")
+    else
+      echo "Warning: No values.yaml found at $AGENT_VALUES"
+    fi
+  fi
+
+  # Load .env file if present at project root
+  if [[ -f "$PROJECT_ROOT/.env" ]]; then
+    echo "  Loading .env from project root"
+    set -a
+    # shellcheck disable=SC1091
+    source "$PROJECT_ROOT/.env"
+    set +a
+
+    [[ -n "${BASE_URL:-}" ]] && HELM_ARGS+=("--set" "env.BASE_URL=$BASE_URL")
+    [[ -n "${MODEL_ID:-}" ]] && HELM_ARGS+=("--set" "env.MODEL_ID=$MODEL_ID")
+    [[ -n "${API_KEY:-}" ]]  && HELM_ARGS+=("--set" "secret.apiKey=$API_KEY")
+  fi
+
+  # Append any extra --set flags
+  HELM_ARGS+=("${EXTRA_SETS[@]}")
+
+  echo ""
+  echo "Installing/upgrading Helm release..."
+  helm upgrade --install "$RELEASE" "$CHART_DIR" \
+    $NS_FLAG \
+    "${HELM_ARGS[@]}" \
+    --wait \
+    --timeout 10m
+
+  echo ""
+  echo "========================================"
+  echo "  Deployment Complete"
+  echo "========================================"
+  echo ""
+
+  # Show route if available
+  local ROUTE_HOST
+  ROUTE_HOST=$(oc get route "$RELEASE" ${NS_FLAG} -o jsonpath='{.spec.host}' 2>/dev/null || echo "")
+  if [[ -n "$ROUTE_HOST" ]]; then
+    echo "  Route: https://$ROUTE_HOST"
+  fi
+
+  echo ""
+  echo "  Pods:"
+  oc get pods ${NS_FLAG} -l "app.kubernetes.io/instance=$RELEASE" \
+    -o custom-columns='  NAME:.metadata.name,STATUS:.status.phase,READY:.status.containerStatuses[0].ready' \
+    --no-headers 2>/dev/null
+  echo ""
+}
+
+# ── destroy ───────────────────────────────────────────────────────────
+
+cmd_destroy() {
+  require_tool helm
+  require_tool oc
+  require_oc_login
+
+  local RELEASE="${1:-}"
+  shift || true
+
+  local NAMESPACE=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --namespace|-n) NAMESPACE="$2"; shift 2 ;;
+      *) echo "Unknown option: $1"; exit 1 ;;
+    esac
+  done
+
+  if [[ -z "$RELEASE" ]]; then
+    echo "Error: Release name is required."
+    echo "Usage: agentctl destroy <release> [--namespace <ns>]"
+    exit 1
+  fi
+
+  local NS_FLAG=""
+  [[ -n "$NAMESPACE" ]] && NS_FLAG="--namespace $NAMESPACE"
+
+  echo ""
+  echo "This will remove all resources for release '$RELEASE'."
+  read -p "Are you sure? (y/N) " -n 1 -r
+  echo ""
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Cancelled."
+    exit 0
+  fi
+
+  echo "Uninstalling Helm release '$RELEASE'..."
+  helm uninstall "$RELEASE" $NS_FLAG 2>/dev/null || echo "No Helm release '$RELEASE' found."
+
+  echo ""
+  echo "Release '$RELEASE' removed."
+}
+
+# ── list ──────────────────────────────────────────────────────────────
+
+cmd_list() {
+  require_tool oc
+  require_oc_login
+
+  local NS_FLAG=""
+  if [[ "${1:-}" == "--all-namespaces" || "${1:-}" == "-A" ]]; then
+    NS_FLAG="--all-namespaces"
+  fi
+
+  echo ""
+  echo "Deployed agents (app.kubernetes.io/part-of=agentic-starter-kits):"
+  echo ""
+  oc get deployments $NS_FLAG \
+    -l app.kubernetes.io/part-of=agentic-starter-kits \
+    -o custom-columns='NAME:.metadata.name,NAMESPACE:.metadata.namespace,READY:.status.readyReplicas,IMAGE:.spec.template.spec.containers[0].image' \
+    2>/dev/null || echo "  No agents found."
+  echo ""
+}
+
+# ── status ────────────────────────────────────────────────────────────
+
+cmd_status() {
+  require_tool helm
+  require_tool oc
+  require_oc_login
+
+  local RELEASE="${1:-}"
+  shift || true
+
+  local NAMESPACE=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --namespace|-n) NAMESPACE="$2"; shift 2 ;;
+      *) echo "Unknown option: $1"; exit 1 ;;
+    esac
+  done
+
+  if [[ -z "$RELEASE" ]]; then
+    echo "Error: Release name is required."
+    echo "Usage: agentctl status <release> [--namespace <ns>]"
+    exit 1
+  fi
+
+  local NS_FLAG=""
+  [[ -n "$NAMESPACE" ]] && NS_FLAG="--namespace $NAMESPACE"
+
+  echo ""
+  echo "Agent: $RELEASE"
+  echo "Namespace: ${NAMESPACE:-$(oc project -q)}"
+  echo ""
+
+  echo "-- Helm Release --"
+  helm status "$RELEASE" $NS_FLAG 2>/dev/null || echo "No Helm release found."
+  echo ""
+
+  echo "-- Pods --"
+  oc get pods $NS_FLAG -l "app.kubernetes.io/instance=$RELEASE" \
+    -o custom-columns='NAME:.metadata.name,STATUS:.status.phase,RESTARTS:.status.containerStatuses[0].restartCount' \
+    2>/dev/null || echo "  No pods found."
+  echo ""
+
+  echo "-- Routes --"
+  oc get routes $NS_FLAG -l "app.kubernetes.io/instance=$RELEASE" \
+    -o custom-columns='NAME:.metadata.name,HOST:.spec.host' \
+    2>/dev/null || echo "  No routes found."
+  echo ""
+}
+
+# ── main ──────────────────────────────────────────────────────────────
+
+COMMAND="${1:-}"
+shift || true
+
+case "$COMMAND" in
+  deploy)  cmd_deploy "$@" ;;
+  destroy) cmd_destroy "$@" ;;
+  list)    cmd_list "$@" ;;
+  status)  cmd_status "$@" ;;
+  help|-h|--help) usage ;;
+  *)       usage ;;
+esac

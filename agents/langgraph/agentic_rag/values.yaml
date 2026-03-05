@@ -1,0 +1,46 @@
+# Helm values override for LangGraph Agentic RAG
+nameOverride: langgraph-agentic-rag
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "200m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+
+extraEnv:
+  - name: EMBEDDING_MODEL
+    value: ""
+  - name: VECTOR_STORE_NAME
+    value: ""
+  - name: VECTOR_STORE_ID
+    value: ""
+  - name: VECTOR_STORE_PATH
+    value: "/app/data/vector_store"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 15
+  periodSeconds: 120
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+volumes:
+  - name: vector-store
+    emptyDir: {}
+
+volumeMounts:
+  - name: vector-store
+    mountPath: /app/data
