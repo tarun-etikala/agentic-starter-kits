@@ -10,7 +10,7 @@
 
 ### Preconditions:
 
-- You need to copy/paste .env file and change its values to yours
+- You need to change .env.template file to .env
 - **Setup PostgreSQL database** for conversation persistence
 - Decide what way you want to go `local` or `RH OpenShift Cluster` and fill needed values
 
@@ -18,6 +18,10 @@ Go to agent dir
 
 ```bash
 cd agents/community/langgraph_react_with_database_memory
+```
+
+```bash
+mv template.env .env
 ```
 
 Create and activate a virtual environment (Python 3.12) in this directory using [uv](https://docs.astral.sh/uv/):
@@ -28,12 +32,6 @@ source .venv/bin/activate
 ```
 
 (On Windows: `.venv\Scripts\activate`)
-
-Copy .env file
-
-```bash
-cp ../../../template.env .env
-```
 
 #### Local
 
@@ -62,6 +60,7 @@ Edit the `.env` file and fill in all required values:
 API_KEY=your-api-key-here
 BASE_URL=https://your-llama-stack-distribution.com/v1
 MODEL_ID=llama-3.1-8b-instruct
+CONTAINER_IMAGE=<server>/<user>/<repo>
 
 # PostgreSQL Database Configuration
 POSTGRES_HOST=your-postgres-host.com
@@ -90,7 +89,7 @@ chmod +x init.sh
 Add values from .env to environment variables
 
 ```bash
-./init.sh
+source ./init.sh
 ```
 
 ## Local usage (Ollama + LlamaStack Server + PostgreSQL)
