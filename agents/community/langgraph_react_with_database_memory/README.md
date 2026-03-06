@@ -98,7 +98,7 @@ source ./init.sh
 
 You can use Docker or a local installation:
 
-**Option 1: Docker (Recommended for testing)**
+**Option 1: Docker**
 
 ```bash
 docker run --name postgres-agent \
@@ -321,7 +321,7 @@ oc get route langgraph-db-memory -o jsonpath='{.spec.host}'
 Send a test request:
 
 ```bash
-curl -X POST https://langgraph-db-memory-tguzik-agents.apps.rosa.ai-eng-gpu.socc.p3.openshiftapps.com/chat \
+curl -X POST https://<YOUR_ROUTE_URL>/chat \
   -H "Content-Type: application/json" \
   -d '{
     "messages": [{"role": "user", "content": "I will tell you a story about blue eyed Johnny! He liked ice creams. End."}],
