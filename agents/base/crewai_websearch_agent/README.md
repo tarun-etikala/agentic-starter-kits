@@ -40,9 +40,9 @@ Edit the `.env` file with your local configuration:
 **OpenAI API** directly:
 
 ```
-BASE_URL=https://api.openai.com/v1
-MODEL_ID=gpt-4o-mini
-API_KEY=sk-...
+BASE_URL=http://localhost:8321
+MODEL_ID=ollama/llama3.1:8b
+API_KEY=not-needed
 CONTAINER_IMAGE=not-needed
 ```
 
@@ -113,9 +113,10 @@ curl -fsSL https://ollama.com/install.sh | sh
 ```
 
 Pull required models:
+CrewAI agent need a bigger model then others.
 
 ```bash
-ollama pull llama3.2:3b
+ollama pull llama3.1:8b
 ```
 
 Start Ollama service:
@@ -171,7 +172,7 @@ Get the route URL:
 oc get route crewai-websearch-agent -o jsonpath='{.spec.host}'
 ```
 
-Send a test request:
+/chat response:
 
 ```bash
 curl -X POST https://<YOUR_ROUTE_URL>/chat \
@@ -179,12 +180,24 @@ curl -X POST https://<YOUR_ROUTE_URL>/chat \
   -d '{"message": "What is the best cluster hosting service?"}'
 ```
 
-Stream a response:
+/stream response:
 
 ```bash
 curl -sN -X POST https://<YOUR_ROUTE_URL>/stream \
   -H "Content-Type: application/json" \
   -d '{"message": "What is the best cluster hosting service?"}'
+```
+
+Pretty /stream response
+
+```bash
+curl -sN -X POST https://<YOUR_ROUTE_URL>/stream \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is the best cluster hosting service??"}' |
+  grep --line-buffered '^data: ' |
+  sed -u 's/^data: //' |
+  grep -v '^\[DONE\]$' |
+  jq -r -j '.choices[0].delta.content // empty'
 ```
 
 ---
