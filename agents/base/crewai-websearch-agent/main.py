@@ -1,29 +1,45 @@
 import asyncio
+import json
+import re
 from contextlib import asynccontextmanager
 from os import getenv
 
 from crewai import LLM
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from crewai_web_search.crew import AssistanceAgents
 
 
 class ChatRequest(BaseModel):
-    """Incoming chat request body for the /chat endpoint."""
+    """Incoming chat request body for the /chat and /stream endpoints."""
 
     message: str
 
 
-class ChatResponse(BaseModel):
-    """Structured chat response."""
-
-    answer: str
-    steps: list[str]
-
-
 # Global LLM instance
 llm = None
+
+# Patterns that indicate CrewAI internal scaffolding in the output
+_REACT_NOISE = re.compile(
+    r"(^|\n)\s*(Thought:\s*|Action:\s*|Action Input:\s*|Observation:\s*|Final Answer:\s*).*",
+    re.DOTALL,
+)
+_CREWAI_PROMPT_MARKER = "\n\n\nYou ONLY have access to"
+
+
+def _clean_content(text: str) -> str:
+    """Strip CrewAI internal ReAct scaffolding and prompt noise from output."""
+    # Strip appended retry instructions
+    idx = text.find(_CREWAI_PROMPT_MARKER)
+    if idx != -1:
+        text = text[:idx]
+
+    # Strip ReAct format artifacts (Thought:/Action:/Final Answer: prefixes)
+    text = _REACT_NOISE.sub("", text)
+
+    return text.strip()
 
 
 @asynccontextmanager
@@ -59,7 +75,7 @@ app = FastAPI(
 
 @app.post("/chat")
 async def chat(request: ChatRequest):
-    """Chat endpoint that runs the CrewAI crew and returns the response."""
+    """Non-streaming chat endpoint. Returns the final answer."""
     global llm
 
     if llm is None:
@@ -71,31 +87,109 @@ async def chat(request: ChatRequest):
             "custom_instruction": "",
         }
 
-        intermediate_steps: list = []
-        crew = AssistanceAgents(
-            llm=llm, intermediate_steps=intermediate_steps
-        ).crew()
-
+        crew = AssistanceAgents(llm=llm).crew()
         result = await asyncio.to_thread(crew.kickoff, inputs=inputs)
 
-        steps = []
-        for step in intermediate_steps:
-            from crewai.agents.parser import AgentAction, AgentFinish
-            from crewai.tools.tool_types import ToolResult
+        response_messages = [
+            {"role": "user", "content": request.message},
+            {"role": "assistant", "content": _clean_content(str(result))},
+        ]
 
-            if isinstance(step, AgentAction):
-                steps.append(f"[action] {step.result}")
-            elif isinstance(step, AgentFinish):
-                steps.append(f"[finish] {step.output}")
-            elif isinstance(step, ToolResult):
-                steps.append(f"[tool] {step.result}")
-
-        return ChatResponse(answer=str(result), steps=steps)
+        return {"messages": response_messages, "finish_reason": "stop"}
 
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error processing request: {str(e)}"
         )
+
+
+@app.post("/stream")
+async def stream(request: ChatRequest):
+    """Streaming chat endpoint using CrewAI's native token-level streaming.
+
+    Uses Crew(stream=True) with kickoff_async() which returns a
+    CrewStreamingOutput that yields StreamChunk objects with real
+    token-by-token content from the LLM.
+    """
+    global llm
+
+    if llm is None:
+        raise HTTPException(status_code=503, detail="Agent not initialized")
+
+    async def _event_generator():
+        inputs = {
+            "user_prompt": request.message,
+            "custom_instruction": "",
+        }
+
+        crew = AssistanceAgents(llm=llm, stream=True).crew()
+
+        # kickoff_async with stream=True returns CrewStreamingOutput
+        streaming_output = await crew.kickoff_async(inputs=inputs)
+
+        # Buffer tokens until we see "Final Answer:" — everything before
+        # that is internal ReAct reasoning (Thought/Action/Observation).
+        buffer = ""
+        emitting = False
+
+        async for chunk in streaming_output:
+            if chunk.chunk_type.value != "text" or not chunk.content:
+                continue
+
+            if emitting:
+                # Already past "Final Answer:", emit tokens directly
+                sse_chunk = {
+                    "choices": [{
+                        "index": 0,
+                        "delta": {"role": "assistant", "content": chunk.content},
+                        "finish_reason": None,
+                    }]
+                }
+                yield f"data: {json.dumps(sse_chunk)}\n\n"
+            else:
+                buffer += chunk.content
+                # Check if we've reached the final answer
+                marker = "Final Answer:"
+                idx = buffer.find(marker)
+                if idx != -1:
+                    emitting = True
+                    # Emit any text after the marker that arrived in this chunk
+                    remainder = buffer[idx + len(marker):]
+                    if remainder.strip():
+                        sse_chunk = {
+                            "choices": [{
+                                "index": 0,
+                                "delta": {"role": "assistant", "content": remainder.lstrip()},
+                                "finish_reason": None,
+                            }]
+                        }
+                        yield f"data: {json.dumps(sse_chunk)}\n\n"
+
+        # If no "Final Answer:" was found, send the cleaned full buffer
+        if not emitting and buffer.strip():
+            cleaned = _clean_content(buffer)
+            if cleaned:
+                sse_chunk = {
+                    "choices": [{
+                        "index": 0,
+                        "delta": {"role": "assistant", "content": cleaned},
+                        "finish_reason": None,
+                    }]
+                }
+                yield f"data: {json.dumps(sse_chunk)}\n\n"
+
+        # Send final stop event
+        final_chunk = {
+            "choices": [{
+                "index": 0,
+                "delta": {},
+                "finish_reason": "stop",
+            }]
+        }
+        yield f"data: {json.dumps(final_chunk)}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(_event_generator(), media_type="text/event-stream")
 
 
 @app.get("/health")

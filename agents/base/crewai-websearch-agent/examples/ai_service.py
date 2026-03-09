@@ -8,9 +8,9 @@ from crewai_web_search.crew import AssistanceAgents
 def ai_stream_service(context, base_url=None, model_id=None):
     """Create a deployable AI service that runs the CrewAI web search crew.
 
-    Builds the LLM once, then returns two callables: one for a single
-    non-streaming response and one that returns a non-streaming response
-    (CrewAI does not support streaming).
+    Builds the LLM once, then returns two callables:
+      - generate: returns a single response dict
+      - generate_stream: yields streaming choice dicts via step_callback
 
     Args:
         context: Object with get_json() used to read the request payload.
@@ -18,8 +18,7 @@ def ai_stream_service(context, base_url=None, model_id=None):
         model_id: LLM model id; will be prefixed with 'openai/'.
 
     Returns:
-        Tuple (generate, generate). CrewAI does not support streaming,
-        so both entries return the same non-streaming callable.
+        Tuple (generate, generate_stream).
     """
     from os import getenv
 
@@ -40,45 +39,67 @@ def ai_stream_service(context, base_url=None, model_id=None):
     ) -> dict | None:
         """Turn a CrewAI step into a display dict (role + content) for the client."""
         if isinstance(crewai_step, AgentAction):
-            return {"role": "assistant", "content": crewai_step.result}
+            return {"role": "assistant", "content": str(crewai_step.result)}
         elif isinstance(crewai_step, AgentFinish):
             return {"role": "assistant", "content": crewai_step.output}
         elif isinstance(crewai_step, ToolResult):
-            return {"role": "tool", "content": f"\n🔧 Tool Output:\n {crewai_step.result}"}
+            return {"role": "tool", "content": str(crewai_step.result)}
         return None
 
-    def generate(context) -> dict:
-        """Run the crew on the context payload and return a response dict with choices."""
+    def _parse_inputs(context):
         payload = context.get_json()
         messages = payload.get("messages", [])
-
         user_question = messages[-1]["content"]
         custom_instruction = ""
         if messages and messages[0].get("role") == "system":
             custom_instruction = messages[0]["content"]
-
-        inputs = {
+        return {
             "user_prompt": user_question,
             "custom_instruction": custom_instruction,
         }
 
-        intermediate_steps: list = []
-        _ = (
-            AssistanceAgents(llm=llm, intermediate_steps=intermediate_steps)
+    def generate(context) -> dict:
+        """Run the crew and return a single response dict with choices."""
+        inputs = _parse_inputs(context)
+
+        result = AssistanceAgents(llm=llm).crew().kickoff(inputs=inputs)
+
+        return {
+            "headers": {"Content-Type": "application/json"},
+            "body": {
+                "choices": [
+                    {"index": 0, "message": {"role": "assistant", "content": str(result)}}
+                ]
+            },
+        }
+
+    def generate_stream(context):
+        """Run the crew and yield streaming choice dicts as steps complete."""
+        inputs = _parse_inputs(context)
+        steps_collected = []
+
+        def _on_step(step_output):
+            steps_collected.append(step_output)
+
+        result = (
+            AssistanceAgents(llm=llm, step_callback=_on_step)
             .crew()
             .kickoff(inputs=inputs)
         )
 
-        choices = []
-        for i, step in enumerate(intermediate_steps):
+        # Yield collected intermediate steps
+        for step in steps_collected:
             msg = get_formatted_message(step)
             if msg:
-                choices.append({"index": i, "message": msg})
+                yield {"choices": [{"index": 0, "delta": msg, "finish_reason": None}]}
 
-        return {
-            "headers": {"Content-Type": "application/json"},
-            "body": {"choices": choices},
+        # Yield final answer
+        yield {
+            "choices": [{
+                "index": 0,
+                "delta": {"role": "assistant", "content": str(result)},
+                "finish_reason": "stop",
+            }]
         }
 
-    # CrewAI does not support streaming, so both entries point to generate
-    return generate, generate
+    return generate, generate_stream

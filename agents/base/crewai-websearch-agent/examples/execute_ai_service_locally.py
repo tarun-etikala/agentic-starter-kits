@@ -27,7 +27,7 @@ model_id = getenv("MODEL_ID")
 if base_url and not base_url.endswith("/v1"):
     base_url = base_url.rstrip("/") + "/v1"
 
-stream = False  # CrewAI does not support streaming
+stream = True
 context = SimpleContext()
 ai_service_resp_func = ai_stream_service(
     context=context, base_url=base_url, model_id=model_id

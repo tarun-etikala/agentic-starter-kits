@@ -13,7 +13,8 @@ class AssistanceAgents:
 
     def __init__(self, llm: LLM, **kwargs):
         self.llm = llm
-        self.intermediate_steps = kwargs.pop("intermediate_steps", None)
+        self.step_callback = kwargs.pop("step_callback", None)
+        self.enable_stream = kwargs.pop("stream", False)
 
     @after_kickoff  # Optional hook to be executed after the crew has finished
     def log_results(self, output):
@@ -42,13 +43,11 @@ class AssistanceAgents:
     def crew(self) -> Crew:
         """Creates the AI Assistant crew"""
 
-        def task_callback(step_output):
-            self.intermediate_steps.append(step_output)
-
         return Crew(
             agents=self.agents,  # Automatically created by the @agent decorator
             tasks=self.tasks,  # Automatically created by the @task decorator
             process=Process.sequential,
             verbose=True,
-            step_callback=task_callback,
+            step_callback=self.step_callback,
+            stream=self.enable_stream,
         )
