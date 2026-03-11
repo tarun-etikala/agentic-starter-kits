@@ -6,85 +6,101 @@
 </div>
 
 ## Purpose
-Production-ready agent templates to build and deploy LLM-powered agents. Run locally (e.g. with Ollama/Llama Stack) or deploy to Red Hat OpenShift. Each agent has step-by-step docs.
+Production-ready agent templates to build and deploy LLM-powered agents on Red Hat OpenShift. Run locally (e.g. with Ollama/Llama Stack) or deploy to any Kubernetes cluster. Each agent has step-by-step docs.
 
 ## Agents
-Choose an agent and follow its README for setup and deployment:
 
-- **[LangGraph ReAct](./agents/base/langgraph_react_agent/README.md)** – General-purpose agent using a ReAct loop: it reasons and calls tools (e.g. search, math) step by step. Built with LangGraph and LangChain.
-- **[LlamaIndex WebSearch](./agents/base/llamaindex_websearch_agent/README.md)** – Agent built on LlamaIndex that uses a web search tool to query the internet and use the results in its answers.
-- **[OpenAI Responses](./agents/base/openai_responses_agent/README.md)** – Minimal agent with no framework: only the OpenAI Python client and an Action/Observation loop with tools. Use with OpenAI or any compatible API.
-- **[LangGraph Agentic RAG](./agents/community/langgraph_agentic_rag/README.md)** – RAG agent that indexes documents in a vector store (Milvus) and retrieves relevant chunks to augment the LLM’s answers with your own data.
+Agents are organized by framework. Pick one and follow its README:
 
-## Deployment Options
-Agents in this repository can support two deployment modes:
+| Framework | Agent | Description |
+|-----------|-------|-------------|
+| **LangGraph** | [ReAct Agent](./agents/langgraph/react_agent/) | General-purpose ReAct loop: reasons and calls tools (search, math) step by step |
+| **LangGraph** | [Agentic RAG](./agents/langgraph/agentic_rag/) | RAG agent that indexes documents in Milvus and retrieves relevant chunks to augment answers |
+| **LlamaIndex** | [WebSearch Agent](./agents/llamaindex/websearch_agent/) | Uses a web search tool to query the internet and augment answers |
+| **OpenAI** | [Responses Agent](./agents/openai/responses_agent/) | Minimal agent with no framework: OpenAI client + Action/Observation loop with tools |
 
-### 🖥️ Local Development
-- Run agents on your local machine
-- Use Llama Stack server with Ollama for model serving
-- Ideal for development, testing, and experimentation
-- No cloud infrastructure required
+## Quick Start
 
-### ☁️ Production Deployment
-- Deploy agents to Red Hat OpenShift Cluster
-- Containerized deployment with Kubernetes
-- Production-grade scaling and monitoring
-- CI/CD ready
+```bash
+git clone https://github.com/red-hat-data-services/agentic-starter-kits
+cd agentic-starter-kits
+
+# Install uv (Python package manager)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Pick an agent and go
+cd agents/langgraph/react_agent
+make init        # creates .env from .env.example
+vi .env          # fill in API_KEY, BASE_URL, MODEL_ID
+make run         # starts on http://localhost:8080
+```
+
+## Deployment
+
+Every agent can be deployed to OpenShift (or any Kubernetes cluster) using the shared Helm chart:
+
+```bash
+cd agents/langgraph/react_agent
+make build       # builds and pushes container image
+make deploy      # deploys via Helm
+```
+
+See [OpenShift Deployment Guide](./docs/openshift-deployment.md) for details.
 
 ## Repository Structure
 
 ```
-Agentic-Starter-Kits/
+agentic-starter-kits/
 ├── agents/
-│   ├── base/
-│   │   ├── langgraph_react_agent/       # LangGraph ReAct agent 
-│   │   └── llamaindex_websearch_agent/  # LlamaIndex web search agent
-│   │   └── openai_responses_agent/      # OpenAI Responses API (no framework)
-│   └── community/
-│       └── langgraph_agentic_rag/       # RAG agent with Milvus vector store
-├── run_llama_server.yaml                # Llama Stack server configuration
-├── utils.py                             # Shared utilities
-└── README.md                            # This file
+│   ├── langgraph/
+│   │   ├── react_agent/              # LangGraph ReAct agent
+│   │   └── agentic_rag/             # LangGraph RAG agent with Milvus
+│   ├── llamaindex/
+│   │   └── websearch_agent/         # LlamaIndex web search agent
+│   └── openai/
+│       └── responses_agent/         # OpenAI Responses API (no framework)
+├── charts/
+│   └── agent/                       # Shared Helm chart for all agents
+├── docs/                            # Guides: deployment, local dev, contributing
+├── infrastructure/
+│   └── llama-stack/                 # Llama Stack server configuration
+└── README.md
 ```
 
----
+Each agent directory contains:
 
-## How to Use This Repository
-1. **Start Here**: Read this README to understand the overall structure and install core dependencies
-2. **Choose an Agent**: Select an agent from the `agents/` directory based on your use case
-3. **Follow Agent README**: Navigate to the agent's directory and follow its specific README for:
-   - Agent-specific dependencies installation
-   - Configuration and setup
-   - Local development or OpenShift deployment
-   - Usage examples and API endpoints
-
-
-### Pre-requisitions to run that repo
-Run this script to set up repo stuff with a use of [UV](https://docs.astral.sh/uv/) and python 3.12
-
-Download repo
-```bash
-git clone https://github.com/red-hat-data-services/agentic-starter-kits
 ```
-Get into root dir
-```bash
-cd agentic-starter-kits
+agent-name/
+├── agent.yaml         # Agent metadata and required env vars
+├── values.yaml        # Helm values override for this agent
+├── .env.example       # Environment variable template
+├── Makefile           # make init, run, build, deploy, test
+├── Dockerfile         # Container build
+├── pyproject.toml     # Python dependencies
+├── main.py            # FastAPI app (/chat, /stream, /health)
+├── src/               # Agent source code
+├── tests/             # Tests
+└── examples/          # Example scripts
 ```
-Install UV
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
----
+
+## Documentation
+
+- [Local Development](./docs/local-development.md) — Ollama + Llama Stack setup
+- [OpenShift Deployment](./docs/openshift-deployment.md) — Helm-based deployment guide
+- [Adding a New Agent](./docs/adding-a-new-agent.md) — How to contribute a new agent template
 
 ## Additional Resources
-- **Llama Stack Documentation**: https://llama-stack.readthedocs.io/
-- **Ollama Documentation**: https://docs.ollama.com/
-- **OpenShift Documentation**: https://docs.openshift.com/
+
+- **Llama Stack**: https://llama-stack.readthedocs.io/
+- **Ollama**: https://docs.ollama.com/
+- **Red Hat OpenShift**: https://docs.openshift.com/
+- **Helm**: https://helm.sh/docs/
 - **Kubernetes**: https://kubernetes.io/docs/
 
-
 ## Contributing
-Contributions are welcome! Please see individual agent READMEs for specific guidelines.
+
+Contributions are welcome! See [Adding a New Agent](./docs/adding-a-new-agent.md) and [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
+
 MIT License
