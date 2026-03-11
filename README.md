@@ -17,6 +17,7 @@ Agents are organized by framework. Pick one and follow its README:
 | **LangGraph** | [ReAct Agent](./agents/langgraph/react_agent/) | General-purpose ReAct loop: reasons and calls tools (search, math) step by step |
 | **LangGraph** | [Agentic RAG](./agents/langgraph/agentic_rag/) | RAG agent that indexes documents in Milvus and retrieves relevant chunks to augment answers |
 | **LlamaIndex** | [WebSearch Agent](./agents/llamaindex/websearch_agent/) | Uses a web search tool to query the internet and augment answers |
+| **CrewAI** | [WebSearch Agent](./agents/crewai/websearch_agent/) | ReAct-style crew with a web search tool to answer user questions |
 | **OpenAI** | [Responses Agent](./agents/openai/responses_agent/) | Minimal agent with no framework: OpenAI client + Action/Observation loop with tools |
 
 ## Quick Start
@@ -55,6 +56,8 @@ agentic-starter-kits/
 │   ├── langgraph/
 │   │   ├── react_agent/              # LangGraph ReAct agent
 │   │   └── agentic_rag/             # LangGraph RAG agent with Milvus
+│   ├── crewai/
+│   │   └── websearch_agent/         # CrewAI web search agent
 │   ├── llamaindex/
 │   │   └── websearch_agent/         # LlamaIndex web search agent
 │   └── openai/
