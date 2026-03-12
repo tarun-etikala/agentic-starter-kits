@@ -1,5 +1,5 @@
 AGENT_NAME  := $(shell grep 'nameOverride' values.yaml | head -1 | awk '{print $$2}' | tr -d '"')
-CHART_DIR   := ../../charts/agent
+CHART_DIR   := ../../../charts/agent
 VALUES_FILE := values.yaml
 
 .PHONY: init run build deploy undeploy test help
@@ -21,10 +21,13 @@ build: ## Build and push container image
 
 deploy: ## Deploy to OpenShift/K8s via Helm
 	@source .env && \
+	  IMAGE_REPO="$${CONTAINER_IMAGE%%:*}" && \
+	  IMAGE_TAG="$${CONTAINER_IMAGE##*:}" && \
 	  helm upgrade --install $(AGENT_NAME) $(CHART_DIR) \
 	    -f $(VALUES_FILE) \
 	    --set secrets.apiKey="$${API_KEY}" \
-	    --set image.repository="$${CONTAINER_IMAGE}" \
+	    --set image.repository="$${IMAGE_REPO}" \
+	    --set image.tag="$${IMAGE_TAG}" \
 	    --set env.BASE_URL="$${BASE_URL}" \
 	    --set env.MODEL_ID="$${MODEL_ID}"
 
