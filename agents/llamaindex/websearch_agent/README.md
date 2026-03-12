@@ -74,7 +74,7 @@ See [OpenShift Deployment](../../../docs/openshift-deployment.md) for details.
 ```bash
 curl -X POST http://localhost:8080/chat \
   -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "Which company is considered the best?"}]}'
+  -d '{"message": "Which company is considered the best?"}'
 ```
 
 ### POST /stream
@@ -82,7 +82,7 @@ curl -X POST http://localhost:8080/chat \
 ```bash
 curl -X POST http://localhost:8080/stream \
   -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "Which company is considered the best?"}]}'
+  -d '{"message": "Which company is considered the best?"}'
 ```
 
 ### GET /health

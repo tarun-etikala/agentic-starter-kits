@@ -83,7 +83,7 @@ See [OpenShift Deployment](../../../docs/openshift-deployment.md) for details.
 ```bash
 curl -X POST http://localhost:8080/chat \
   -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "How much does a Lenovo Laptop cost and what are the reviews?"}]}'
+  -d '{"message": "How much does a Lenovo Laptop cost and what are the reviews?"}'
 ```
 
 ### POST /stream
@@ -91,7 +91,7 @@ curl -X POST http://localhost:8080/chat \
 ```bash
 curl -X POST http://localhost:8080/stream \
   -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "How much does a Lenovo Laptop cost and what are the reviews?"}]}'
+  -d '{"message": "How much does a Lenovo Laptop cost and what are the reviews?"}'
 ```
 
 ### GET /health

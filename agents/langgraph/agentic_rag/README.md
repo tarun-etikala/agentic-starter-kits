@@ -94,7 +94,7 @@ See [OpenShift Deployment](../../../docs/openshift-deployment.md) for details.
 ```bash
 curl -X POST http://localhost:8080/chat \
   -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "What is LangChain?"}]}'
+  -d '{"message": "What is LangChain?"}'
 ```
 
 ### POST /stream
@@ -102,7 +102,7 @@ curl -X POST http://localhost:8080/chat \
 ```bash
 curl -X POST http://localhost:8080/stream \
   -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "What is LangChain?"}]}'
+  -d '{"message": "What is LangChain?"}'
 ```
 
 ### GET /health

@@ -37,4 +37,4 @@ undeploy: ## Remove deployment from cluster
 	helm uninstall $(AGENT_NAME)
 
 test: ## Run tests
-	uv run pytest tests/
+	uv run --extra dev python -m pytest tests/

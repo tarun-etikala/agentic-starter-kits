@@ -11,3 +11,5 @@ __pycache__
 dist
 config.toml
 milvus_data/
+*.egg-info/
+uv.lock

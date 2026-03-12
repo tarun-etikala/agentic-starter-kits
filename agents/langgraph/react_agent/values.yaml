@@ -4,4 +4,3 @@ nameOverride: "langgraph-react-agent"
 env:
   MODEL_ID: ""
   BASE_URL: ""
-  PORT: "8080"

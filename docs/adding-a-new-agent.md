@@ -44,8 +44,8 @@ Every agent must have:
 
 All agents must expose these endpoints:
 
-- `POST /chat` — accepts `{"messages": [{"role": "user", "content": "..."}]}`, returns response
-- `POST /stream` — same input, returns SSE stream with `token`, `tool_call`, `tool_result`, `done` events
+- `POST /chat` — accepts `{"message": "..."}`, returns response
+- `POST /stream` — same input, returns SSE stream
 - `GET /health` — returns `{"status": "healthy"}`
 
 ## 5. Update agent.yaml
