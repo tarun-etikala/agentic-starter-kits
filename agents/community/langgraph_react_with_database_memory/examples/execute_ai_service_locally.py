@@ -1,5 +1,5 @@
 from ai_service import ai_stream_service
-from langgraph_react_with_database_memory_base.utils import get_env_var
+from os import getenv
 from _interactive_chat import InteractiveChat
 import uuid
 
@@ -25,9 +25,9 @@ thread_id = "PLACEHOLDER_FOR_YOUR_THREAD_ID"
 stream = True
 
 # Load environment variables
-base_url = get_env_var("BASE_URL")
-model_id = get_env_var("MODEL_ID")
-api_key = get_env_var("API_KEY")
+base_url = getenv("BASE_URL")
+model_id = getenv("MODEL_ID")
+api_key = getenv("API_KEY")
 
 # Ensure base_url ends with /v1 if provided
 if base_url and not base_url.endswith("/v1"):

@@ -1,11 +1,11 @@
+from os import getenv
 from typing import Callable
 
-from langchain_openai import ChatOpenAI
-from langgraph.graph.state import CompiledStateGraph
 from langchain.agents import create_agent
+from langchain.agents.middleware import AgentMiddleware
+from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.base import BaseCheckpointSaver
-from langgraph_react_with_database_memory_base.utils import get_env_var
-from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResponse
+from langgraph.graph.state import CompiledStateGraph
 
 
 class FIFOMessageTrimmer(AgentMiddleware):
@@ -24,13 +24,13 @@ class FIFOMessageTrimmer(AgentMiddleware):
     def wrap_model_call(self, request, handler):
         messages = request.messages
         if len(messages) > self.max_messages:
-            messages = messages[-self.max_messages:]
+            messages = messages[-self.max_messages :]
         return handler(request.override(messages=messages))
 
     async def awrap_model_call(self, request, handler):
         messages = request.messages
         if len(messages) > self.max_messages:
-            messages = messages[-self.max_messages:]
+            messages = messages[-self.max_messages :]
         return await handler(request.override(messages=messages))
 
 
@@ -52,11 +52,11 @@ def get_graph_closure(
 
     # Load environment variables if not provided
     if not api_key:
-        api_key = get_env_var("API_KEY")
+        api_key = getenv("API_KEY")
     if not base_url:
-        base_url = get_env_var("BASE_URL")
+        base_url = getenv("BASE_URL")
     if not model_id:
-        model_id = get_env_var("MODEL_ID")
+        model_id = getenv("MODEL_ID")
 
     # Ensure base_url ends with /v1
     if base_url and not base_url.endswith("/v1"):
