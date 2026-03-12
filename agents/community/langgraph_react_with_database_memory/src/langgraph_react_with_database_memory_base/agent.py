@@ -7,6 +7,8 @@ from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph.state import CompiledStateGraph
 
+from langgraph_react_with_database_memory_base import TOOLS
+
 
 class FIFOMessageTrimmer(AgentMiddleware):
     """Middleware that trims conversation messages to a fixed window (FIFO).
@@ -90,12 +92,12 @@ def get_graph_closure(
         if thread_id:
             return create_agent(
                 chat,
-                tools=[],
+                tools=TOOLS,
                 checkpointer=memory,
                 system_prompt=system_prompt,
                 middleware=[fifo_middleware],
             )
         else:
-            return create_agent(chat, tools=[], system_prompt=system_prompt)
+            return create_agent(chat, tools=[TOOLS], system_prompt=system_prompt)
 
     return get_graph
