@@ -1,0 +1,7 @@
+# Helm values override for LlamaIndex WebSearch Agent
+nameOverride: "llamaindex-websearch-agent"
+
+env:
+  MODEL_ID: ""
+  BASE_URL: ""
+  PORT: "8080"
