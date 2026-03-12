@@ -16,6 +16,7 @@ env: {}
 
 secrets:
   apiKey: ""
+  postgresPassword: ""
 
 service:
   port: 8080

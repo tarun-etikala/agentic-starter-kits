@@ -35,6 +35,13 @@ spec:
                   name: {{ include "agent.fullname" . }}-secret
                   key: api-key
             {{- end }}
+            {{- if .Values.secrets.postgresPassword }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agent.fullname" . }}-secret
+                  key: postgres-password
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
