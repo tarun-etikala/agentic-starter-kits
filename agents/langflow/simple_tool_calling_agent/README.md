@@ -32,11 +32,8 @@ Outdoor activity planning agent built with Langflow. It recommends the best day 
   brew install podman             # install podman runtime
   brew install podman-compose     # install compose plugin
   podman machine init             # create a Linux VM (podman runs containers in a VM on macOS)
-  podman machine set --memory 16384  # allocate 16GB RAM (required for running 7B models + all services)
   podman machine start            # start the VM
   ```
-
-  > The default Podman VM memory (8GB) is not enough to run a 7B model alongside Langflow, Langfuse, and backing services. If you see worker timeouts or SIGKILL errors, increase the VM memory. If you already have a running machine, stop it first with `podman machine stop`.
 
   **Linux:**
   ```bash
@@ -103,7 +100,7 @@ On the cluster, replace `localhost:7860` with your cluster's Langflow route URL.
 
 | Data | `cleanup-local.sh` | `cleanup-local.sh --force` |
 |------|---------------------|----------------------------|
-| Downloaded Ollama models (e.g., qwen2.5:7b) | Kept | **Deleted** (re-download on next start) |
+| Downloaded Ollama models (e.g., qwen2.5:7b) | Kept | Kept (stored on host, not in containers) |
 | Imported Langflow flows | Kept | **Deleted** (re-import needed) |
 | Langfuse traces | Kept | **Deleted** |
 | PostgreSQL data | Kept | **Deleted** |
@@ -147,7 +144,7 @@ If you want to use a different model:
 
 1. Pull the model on Ollama:
    ```bash
-   podman exec -it <ollama-container> ollama pull <model-name>
+   ollama pull <model-name>
    ```
    Or edit `local/.env` to change the default model and restart:
    ```
