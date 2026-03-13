@@ -227,21 +227,20 @@ oc get route langgraph-agentic-rag -o jsonpath='{.spec.host}'
 
 Send a test request:
 
-/chat endpoint
+Non-streaming
 
 ```bash
 curl -X POST https://<YOUR_ROUTE_URL>/chat \
   -H "Content-Type: application/json" \
-  -d '{"message": "What is LangChain?"}'
+  -d '{"messages": [{"role": "user", "content": "What is LangChain?"}], "stream": false}'
 ```
 
-/stream endpoint
-Classic Print
+Streaming
 
 ```bash
 curl -X POST https://<YOUR_ROUTE_URL>/stream \
   -H "Content-Type: application/json" \
-  -d '{"message": "What is LangChain?"}'
+  -d '{"messages": [{"role": "user", "content": "What is LangChain?"}], "stream": true}'
 ```
 
 Pretty Printed Stream
@@ -249,8 +248,8 @@ Pretty Printed Stream
 ```bash
 curl -X POST https://<YOUR_ROUTE_URL>/stream \
   -H "Content-Type: application/json" \
-  -d '{"message": "What is LangChain?"}' |
-   jq -R -r -j --stream 'scan("^data:(.*)")[] | fromjson.content // empty'
+  -d '{"messages": [{"role": "user", "content": "What is LangChain?"}], "stream": true}' |
+   jq -R -r -j --stream 'scan("^data:(.*)")[] | fromjson.choices[0].delta.content // empty'
 ```
 
 ### Additional Resources

@@ -81,7 +81,7 @@ def load_and_index_documents(
 
     vector_store_id = (getenv("VECTOR_STORE_ID") or "").strip().strip("\"'") or None
     provider_id = "milvus"
-    embedding_dimension = 768
+    embedding_dimension = 1024
 
     if vector_store_id:
         # Use existing vector store
@@ -142,7 +142,7 @@ def load_and_index_documents(
             "chunk_id": str(uuid.uuid4()),
             "content": text,
             "embedding": embedding_vec,
-            "embedding_dimension": 768,
+            "embedding_dimension": embedding_dimension,
             "embedding_model": embedding_model,
             "chunk_metadata": {
                 "document_id": "doc_1",
