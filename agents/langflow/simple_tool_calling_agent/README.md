@@ -112,6 +112,21 @@ On the cluster, replace `localhost:7860` with your cluster's Langflow route URL.
 
 This agent assumes Langflow, Langfuse, and an LLM (LlamaStack/KServe) are already running on the cluster.
 
+### Finding cluster endpoints
+
+Reach out to your cluster admin for the Langflow URL and LlamaStack endpoint/model names. However, if you have `oc` CLI access, you can find them yourself:
+
+```bash
+# Langflow UI URL
+oc get routes -n <namespace> | grep langflow
+
+# LlamaStack URL
+oc get routes -n <namespace> | grep llama
+
+# KServe model (internal endpoint + model name)
+oc get inferenceservice --all-namespaces
+```
+
 ### Steps
 
 1. Open the Langflow UI on your cluster
