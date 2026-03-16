@@ -1,6 +1,9 @@
 import asyncio
 import json
+import logging
 import re
+import time
+import uuid
 from contextlib import asynccontextmanager
 from os import getenv
 
@@ -11,11 +14,21 @@ from pydantic import BaseModel
 
 from crewai_web_search.crew import AssistanceAgents
 
+logger = logging.getLogger(__name__)
 
-class ChatRequest(BaseModel):
-    """Incoming chat request body for the /chat and /stream endpoints."""
 
-    message: str
+# OpenAI-compatible request/response models
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class ChatCompletionRequest(BaseModel):
+    """OpenAI-compatible chat completion request."""
+
+    messages: list[ChatMessage]
+    model: str | None = None
+    stream: bool = False
 
 
 # Global LLM instance
@@ -40,6 +53,18 @@ def _clean_content(text: str) -> str:
     text = _REACT_NOISE.sub("", text)
 
     return text.strip()
+
+
+def _build_user_message(messages: list[ChatMessage]) -> str:
+    """Extract the last user message from the OpenAI-format messages list."""
+    for msg in reversed(messages):
+        if msg.role == "user":
+            return msg.content
+    raise ValueError("No user message found in messages list")
+
+
+def _make_completion_id() -> str:
+    return f"chatcmpl-{uuid.uuid4().hex[:12]}"
 
 
 @asynccontextmanager
@@ -73,29 +98,60 @@ app = FastAPI(
 )
 
 
-@app.post("/chat")
-async def chat(request: ChatRequest):
-    """Non-streaming chat endpoint. Returns the final answer."""
+@app.post("/chat/completions")
+async def chat_completions(request: ChatCompletionRequest):
+    """
+    OpenAI-compatible chat completions endpoint.
+
+    When stream=false, returns a full chat.completion response.
+    When stream=true, returns SSE chat.completion.chunk events.
+    """
     global llm
 
     if llm is None:
         raise HTTPException(status_code=503, detail="Agent not initialized")
 
+    user_message = _build_user_message(request.messages)
+    model_id = request.model or getenv("MODEL_ID", "model")
+
+    if request.stream:
+        return await _handle_stream(user_message, model_id)
+    else:
+        return await _handle_chat(user_message, model_id)
+
+
+async def _handle_chat(user_message: str, model_id: str):
+    """Handle non-streaming chat completion."""
+    global llm
+
     try:
         inputs = {
-            "user_prompt": request.message,
+            "user_prompt": user_message,
             "custom_instruction": "",
         }
 
         crew = AssistanceAgents(llm=llm).crew()
         result = await asyncio.to_thread(crew.kickoff, inputs=inputs)
 
-        response_messages = [
-            {"role": "user", "content": request.message},
-            {"role": "assistant", "content": _clean_content(str(result))},
-        ]
+        assistant_content = _clean_content(str(result))
 
-        return {"messages": response_messages, "finish_reason": "stop"}
+        return {
+            "id": _make_completion_id(),
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": model_id,
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": assistant_content,
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": None,
+        }
 
     except Exception as e:
         raise HTTPException(
@@ -103,93 +159,121 @@ async def chat(request: ChatRequest):
         )
 
 
-@app.post("/stream")
-async def stream(request: ChatRequest):
-    """Streaming chat endpoint using CrewAI's native token-level streaming.
-
-    Uses Crew(stream=True) with kickoff_async() which returns a
-    CrewStreamingOutput that yields StreamChunk objects with real
-    token-by-token content from the LLM.
-    """
+async def _handle_stream(user_message: str, model_id: str):
+    """Handle streaming chat completion with OpenAI-compatible SSE chunks."""
     global llm
 
-    if llm is None:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
+    completion_id = _make_completion_id()
+    created = int(time.time())
 
-    async def _event_generator():
-        inputs = {
-            "user_prompt": request.message,
-            "custom_instruction": "",
-        }
+    async def event_generator():
+        try:
+            inputs = {
+                "user_prompt": user_message,
+                "custom_instruction": "",
+            }
 
-        crew = AssistanceAgents(llm=llm, stream=True).crew()
+            crew = AssistanceAgents(llm=llm, stream=True).crew()
+            streaming_output = await crew.kickoff_async(inputs=inputs)
 
-        # kickoff_async with stream=True returns CrewStreamingOutput
-        streaming_output = await crew.kickoff_async(inputs=inputs)
+            # Buffer tokens until we see "Final Answer:" — everything before
+            # that is internal ReAct reasoning (Thought/Action/Observation).
+            buffer = ""
+            emitting = False
 
-        # Buffer tokens until we see "Final Answer:" — everything before
-        # that is internal ReAct reasoning (Thought/Action/Observation).
-        buffer = ""
-        emitting = False
+            async for chunk in streaming_output:
+                if chunk.chunk_type.value != "text" or not chunk.content:
+                    continue
 
-        async for chunk in streaming_output:
-            if chunk.chunk_type.value != "text" or not chunk.content:
-                continue
-
-            if emitting:
-                # Already past "Final Answer:", emit tokens directly
-                sse_chunk = {
-                    "choices": [{
-                        "index": 0,
-                        "delta": {"role": "assistant", "content": chunk.content},
-                        "finish_reason": None,
-                    }]
-                }
-                yield f"data: {json.dumps(sse_chunk)}\n\n"
-            else:
-                buffer += chunk.content
-                # Check if we've reached the final answer
-                marker = "Final Answer:"
-                idx = buffer.find(marker)
-                if idx != -1:
-                    emitting = True
-                    # Emit any text after the marker that arrived in this chunk
-                    remainder = buffer[idx + len(marker):]
-                    if remainder.strip():
-                        sse_chunk = {
-                            "choices": [{
+                if emitting:
+                    data = {
+                        "id": completion_id,
+                        "object": "chat.completion.chunk",
+                        "created": created,
+                        "model": model_id,
+                        "choices": [
+                            {
                                 "index": 0,
-                                "delta": {"role": "assistant", "content": remainder.lstrip()},
+                                "delta": {"content": chunk.content},
                                 "finish_reason": None,
-                            }]
-                        }
-                        yield f"data: {json.dumps(sse_chunk)}\n\n"
+                            }
+                        ],
+                    }
+                    yield f"data: {json.dumps(data)}\n\n"
+                else:
+                    buffer += chunk.content
+                    marker = "Final Answer:"
+                    idx = buffer.find(marker)
+                    if idx != -1:
+                        emitting = True
+                        remainder = buffer[idx + len(marker) :]
+                        if remainder.strip():
+                            data = {
+                                "id": completion_id,
+                                "object": "chat.completion.chunk",
+                                "created": created,
+                                "model": model_id,
+                                "choices": [
+                                    {
+                                        "index": 0,
+                                        "delta": {"content": remainder.lstrip()},
+                                        "finish_reason": None,
+                                    }
+                                ],
+                            }
+                            yield f"data: {json.dumps(data)}\n\n"
 
-        # If no "Final Answer:" was found, send the cleaned full buffer
-        if not emitting and buffer.strip():
-            cleaned = _clean_content(buffer)
-            if cleaned:
-                sse_chunk = {
-                    "choices": [{
+            # If no "Final Answer:" was found, send the cleaned full buffer
+            if not emitting and buffer.strip():
+                cleaned = _clean_content(buffer)
+                if cleaned:
+                    data = {
+                        "id": completion_id,
+                        "object": "chat.completion.chunk",
+                        "created": created,
+                        "model": model_id,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {"content": cleaned},
+                                "finish_reason": None,
+                            }
+                        ],
+                    }
+                    yield f"data: {json.dumps(data)}\n\n"
+
+            # Send final chunk with finish_reason
+            final_data = {
+                "id": completion_id,
+                "object": "chat.completion.chunk",
+                "created": created,
+                "model": model_id,
+                "choices": [
+                    {
                         "index": 0,
-                        "delta": {"role": "assistant", "content": cleaned},
-                        "finish_reason": None,
-                    }]
+                        "delta": {},
+                        "finish_reason": "stop",
+                    }
+                ],
+            }
+            yield f"data: {json.dumps(final_data)}\n\n"
+            yield "data: [DONE]\n\n"
+
+        except Exception:
+            logger.exception("Error in stream event_generator")
+            error_data = {
+                "error": {
+                    "message": "Internal server error",
+                    "type": "server_error",
                 }
-                yield f"data: {json.dumps(sse_chunk)}\n\n"
+            }
+            yield f"data: {json.dumps(error_data)}\n\n"
 
-        # Send final stop event
-        final_chunk = {
-            "choices": [{
-                "index": 0,
-                "delta": {},
-                "finish_reason": "stop",
-            }]
-        }
-        yield f"data: {json.dumps(final_chunk)}\n\n"
-        yield "data: [DONE]\n\n"
-
-    return StreamingResponse(_event_generator(), media_type="text/event-stream")
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/health")
