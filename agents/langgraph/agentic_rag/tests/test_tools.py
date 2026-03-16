@@ -62,7 +62,7 @@ def test_retriever_tool_invoke_with_string_query(mock_get_components):
 
     # Verify the client was called correctly
     mock_client.vector_io.query.assert_called_once_with(
-        vector_store_id="test-vector-store-id", query=query, params={"max_chunks": 2}
+        vector_store_id="test-vector-store-id", query=query, params={"max_chunks": 5}
     )
 
 
@@ -178,18 +178,19 @@ def test_get_retriever_components_initialization(mock_get_env, mock_client_class
     tools_module._client_cache = None
     tools_module._vector_store_id_cache = None
 
-    # Mock environment variable
-    mock_get_env.return_value = "http://localhost:8321"
+    # Mock environment variables with different return values per key
+    def getenv_side_effect(key, default=None):
+        env_map = {
+            "BASE_URL": "http://localhost:8321",
+            "VECTOR_STORE_ID": "test-vector-store-123",
+            "API_KEY": "test-api-key",
+        }
+        return env_map.get(key, default)
 
-    # Mock client and vector store list
+    mock_get_env.side_effect = getenv_side_effect
+
+    # Mock client
     mock_client = Mock()
-    mock_vector_store = Mock()
-    mock_vector_store.id = "test-vector-store-123"
-
-    mock_list_response = Mock()
-    mock_list_response.data = [mock_vector_store]
-
-    mock_client.vector_stores.list.return_value = mock_list_response
     mock_client_class.return_value = mock_client
 
     # Call function
@@ -199,7 +200,10 @@ def test_get_retriever_components_initialization(mock_get_env, mock_client_class
     assert "client" in result
     assert "vector_store_id" in result
     assert result["vector_store_id"] == "test-vector-store-123"
-    mock_client_class.assert_called_once_with(base_url="http://localhost:8321")
+    mock_client_class.assert_called_once_with(
+        base_url="http://localhost:8321",
+        api_key="test-api-key",
+    )
 
 
 @patch("src.agentic_rag.tools.LlamaStackClient")
@@ -223,7 +227,8 @@ def test_get_retriever_components_caching(mock_get_env, mock_client_class):
 
 
 @patch("src.agentic_rag.tools.LlamaStackClient")
-def test_get_retriever_components_with_base_url(mock_client_class):
+@patch("src.agentic_rag.tools.getenv")
+def test_get_retriever_components_with_base_url(mock_get_env, mock_client_class):
     """Test that base_url parameter is used when provided."""
     # Reset cache
     import src.agentic_rag.tools as tools_module
@@ -231,56 +236,65 @@ def test_get_retriever_components_with_base_url(mock_client_class):
     tools_module._client_cache = None
     tools_module._vector_store_id_cache = None
 
-    # Mock client and vector store list
+    # Mock environment variables
+    def getenv_side_effect(key, default=None):
+        env_map = {
+            "VECTOR_STORE_ID": "test-id",
+            "API_KEY": "test-api-key",
+        }
+        return env_map.get(key, default)
+
+    mock_get_env.side_effect = getenv_side_effect
+
+    # Mock client
     mock_client = Mock()
-    mock_vector_store = Mock()
-    mock_vector_store.id = "test-id"
-
-    mock_list_response = Mock()
-    mock_list_response.data = [mock_vector_store]
-
-    mock_client.vector_stores.list.return_value = mock_list_response
     mock_client_class.return_value = mock_client
 
     # Call with explicit base_url
     result = get_retriever_components(base_url="http://custom:9999")
 
     # Should use provided base_url
-    mock_client_class.assert_called_once_with(base_url="http://custom:9999")
+    mock_client_class.assert_called_once_with(
+        base_url="http://custom:9999",
+        api_key="test-api-key",
+    )
     assert result["vector_store_id"] == "test-id"
 
 
-@patch("src.agentic_rag.tools.LlamaStackClient")
 @patch("src.agentic_rag.tools.getenv")
-def test_get_retriever_components_no_vector_store(mock_get_env, mock_client_class):
-    """Test error handling when no vector store is found."""
+def test_get_retriever_components_no_vector_store(mock_get_env):
+    """Test error handling when VECTOR_STORE_ID is not set."""
     # Reset cache
     import src.agentic_rag.tools as tools_module
 
     tools_module._client_cache = None
     tools_module._vector_store_id_cache = None
 
-    mock_get_env.return_value = "http://localhost:8321"
+    # Mock environment variables — VECTOR_STORE_ID not set
+    def getenv_side_effect(key, default=None):
+        env_map = {
+            "BASE_URL": "http://localhost:8321",
+            "API_KEY": "test-api-key",
+        }
+        return env_map.get(key, default)
 
-    # Mock client with empty vector store list
-    mock_client = Mock()
-    mock_list_response = Mock()
-    mock_list_response.data = []  # No vector stores
-
-    mock_client.vector_stores.list.return_value = mock_list_response
-    mock_client_class.return_value = mock_client
+    mock_get_env.side_effect = getenv_side_effect
 
     # Should raise RuntimeError
     with pytest.raises(RuntimeError) as exc_info:
         get_retriever_components()
 
-    assert "No vector store found" in str(exc_info.value)
+    assert "VECTOR_STORE_ID" in str(exc_info.value)
     assert "load_documents.py" in str(exc_info.value)
 
 
-def test_get_retriever_components():
+@pytest.mark.skipif(
+    not os.getenv("BASE_URL") or not os.getenv("VECTOR_STORE_ID"),
+    reason="Requires BASE_URL and VECTOR_STORE_ID env vars"
+)
+def test_get_retriever_components_integration():
     load_dotenv(verbose=True)
-    base_url = getenv("BASE_URL")
+    base_url = os.getenv("BASE_URL")
     get_retriever_components(base_url)
 
 
