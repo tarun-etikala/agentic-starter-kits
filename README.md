@@ -21,7 +21,7 @@ Agents are organized by framework. Pick one and follow its README:
 | **LangGraph** | [ReAct + DB Memory](./agents/langgraph/react_with_database_memory/) | ReAct agent with PostgreSQL-backed conversation memory for persistent chat history |
 | **LlamaIndex** | [WebSearch Agent](./agents/llamaindex/websearch_agent/) | Uses a web search tool to query the internet and augment answers |
 | **CrewAI** | [WebSearch Agent](./agents/crewai/websearch_agent/) | ReAct-style crew with a web search tool to answer user questions |
-| **OpenAI** | [Responses Agent](./agents/openai/responses_agent/) | Minimal agent with no framework: OpenAI client + Action/Observation loop with tools |
+| **Vanilla Python** | [OpenAI Responses Agent](./agents/vanilla_python/openai_responses_agent/) | Minimal agent with no framework: OpenAI client + Action/Observation loop with tools |
 
 ## Deployment Options
 
@@ -54,10 +54,8 @@ agentic-starter-kits/
 │   │   └── websearch_agent/         # CrewAI web search agent
 │   ├── llamaindex/
 │   │   └── websearch_agent/         # LlamaIndex web search agent
-│   └── openai/
-│       └── responses_agent/         # OpenAI Responses API (no framework)
-├── infrastructure/
-│   └── llama-stack/                 # Llama Stack server configuration
+│   └── vanilla_python/
+│       └── openai_responses_agent/  # OpenAI Responses API (no framework)
 └── README.md
 ```
 

@@ -24,7 +24,7 @@ OpenAI or any compatible API.
 Go to agent dir:
 
 ```bash
-cd agents/openai/responses_agent
+cd agents/vanilla_python/openai_responses_agent
 ```
 
 Change the name of .env file
