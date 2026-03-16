@@ -1,5 +1,5 @@
 [project]
-name = "responses_agent"
+name = "openai_responses_agent"
 version = "0.1.0"
 description = "Agent without any agentic framework: OpenAI client and pure Python (Responses API)."
 authors = [{ name = "Your Name", email = "you@example.com" }]

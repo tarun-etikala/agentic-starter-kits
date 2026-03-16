@@ -6,7 +6,7 @@ from os import getenv
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
-from responses_agent.agent import get_agent_closure, AIAgent
+from openai_responses_agent.agent import get_agent_closure, AIAgent
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)

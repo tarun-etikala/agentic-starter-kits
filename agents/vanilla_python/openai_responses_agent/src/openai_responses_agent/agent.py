@@ -17,7 +17,7 @@ from typing import Any, Callable, Dict, List, Optional
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from responses_agent.tools import search_price, search_reviews
+from openai_responses_agent.tools import search_price, search_reviews
 
 
 def get_agent_closure(

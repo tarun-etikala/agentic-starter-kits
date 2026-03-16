@@ -5,8 +5,8 @@ Uses only the OpenAI Python client and pure Python (Responses API).
 No LlamaStack, LangChain, LlamaIndex, etc. Compatible with OpenAI and OpenAI-compatible endpoints.
 """
 
-from responses_agent.agent import AIAgent, get_agent_closure
-from responses_agent.tools import search_reviews, search_price
+from openai_responses_agent.agent import AIAgent, get_agent_closure
+from openai_responses_agent.tools import search_reviews, search_price
 
 __all__ = [
     "get_agent_closure",

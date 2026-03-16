@@ -7,7 +7,7 @@ whose get_json() returns the request payload (e.g. {"messages": [...]}).
 import asyncio
 from typing import Generator
 
-from responses_agent.agent import get_agent_closure
+from openai_responses_agent.agent import get_agent_closure
 
 
 def ai_stream_service(context, base_url=None, model_id=None):
