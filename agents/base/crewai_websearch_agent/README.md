@@ -172,32 +172,31 @@ Get the route URL:
 oc get route crewai-websearch-agent -o jsonpath='{.spec.host}'
 ```
 
-/chat response:
+Send a test request:
+
+Non-streaming
 
 ```bash
-curl -X POST https://<YOUR_ROUTE_URL>/chat \
+curl -X POST https://<YOUR_ROUTE_URL>/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"message": "What is the best cluster hosting service?"}'
+  -d '{"messages": [{"role": "user", "content": "What is the best cluster hosting service?"}], "stream": false}'
 ```
 
-/stream response:
+Streaming
 
 ```bash
-curl -sN -X POST https://<YOUR_ROUTE_URL>/stream \
+curl -sN -X POST https://<YOUR_ROUTE_URL>/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"message": "What is the best cluster hosting service?"}'
+  -d '{"messages": [{"role": "user", "content": "What is the best cluster hosting service?"}], "stream": true}'
 ```
 
-Pretty /stream response
+Pretty Printed Stream
 
 ```bash
-curl -sN -X POST https://<YOUR_ROUTE_URL>/stream \
+curl -sN -X POST https://<YOUR_ROUTE_URL>/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"message": "What is the best cluster hosting service??"}' |
-  grep --line-buffered '^data: ' |
-  sed -u 's/^data: //' |
-  grep -v '^\[DONE\]$' |
-  jq -r -j '.choices[0].delta.content // empty'
+  -d '{"messages": [{"role": "user", "content": "What is the best cluster hosting service?"}], "stream": true}' |
+   jq -R -r -j --stream 'scan("^data:(.*)")[] | fromjson.choices[0].delta.content // empty'
 ```
 
 ---

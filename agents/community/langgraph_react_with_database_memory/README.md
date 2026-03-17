@@ -325,6 +325,7 @@ curl -X POST https://<YOUR_ROUTE_URL>/chat \
   -H "Content-Type: application/json" \
   -d '{
     "messages": [{"role": "user", "content": "I will tell you a story about blue eyed Johnny! He liked ice creams. End."}],
+    "stream": false,
     "thread_id": "test-conversation-1"
   }'
 ```
@@ -332,10 +333,23 @@ curl -X POST https://<YOUR_ROUTE_URL>/chat \
 Continue the conversation with the same thread ID:
 
 ```bash
-curl -X POST https://<YOUR_ROUTE_URL>/chat \
+curl -X POST https://<YOUR_ROUTE_URL>/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "messages": [{"role": "user", "content": "What did we talk about?"}],
+    "stream": false,
+    "thread_id": "test-conversation-1"
+  }'
+```
+
+Streaming:
+
+```bash
+curl -X POST https://<YOUR_ROUTE_URL>/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [{"role": "user", "content": "What did we talk about?"}],
+    "stream": true,
     "thread_id": "test-conversation-1"
   }'
 ```
