@@ -15,17 +15,34 @@ Usage:
 
 import json
 import logging
-import os
+from os import getenv
+from pathlib import Path
 
 import requests as http_requests
-from flask import Flask, Response, jsonify, render_template, request, stream_with_context
+from flask import (
+    Flask,
+    Response,
+    jsonify,
+    render_template,
+    request,
+    send_file,
+    stream_with_context,
+)
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+IMAGES_DIR = Path(__file__).resolve().parents[4] / "images"
+
 app = Flask(__name__)
 
-AGENT_URL = os.getenv("AGENT_URL", "http://localhost:8000")
+
+@app.route("/images/<path:filename>")
+def serve_image(filename):
+    """Serve images from the project-level images directory."""
+    return send_file(IMAGES_DIR / filename)
+
+AGENT_URL = getenv("AGENT_URL", "http://localhost:8000")
 
 
 @app.route("/")
@@ -70,7 +87,13 @@ def chat():
                 if resp.status_code != 200:
                     error_msg = resp.text[:500]
                     logger.error(f"Agent error: {error_msg}")
-                    error = json.dumps({"error": {"message": f"Agent returned {resp.status_code}: {error_msg}"}})
+                    error = json.dumps(
+                        {
+                            "error": {
+                                "message": f"Agent returned {resp.status_code}: {error_msg}"
+                            }
+                        }
+                    )
                     yield f"data: {error}\n\n"
                     return
 
@@ -81,7 +104,13 @@ def chat():
 
         except http_requests.exceptions.ConnectionError:
             logger.error(f"Cannot connect to agent at {AGENT_URL}")
-            error = json.dumps({"error": {"message": f"Cannot connect to agent at {AGENT_URL}. Is it running?"}})
+            error = json.dumps(
+                {
+                    "error": {
+                        "message": f"Cannot connect to agent at {AGENT_URL}. Is it running?"
+                    }
+                }
+            )
             yield f"data: {error}\n\n"
         except http_requests.exceptions.ReadTimeout:
             logger.error("Agent request timed out")

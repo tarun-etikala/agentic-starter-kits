@@ -42,6 +42,29 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
+            position: relative;
+        }
+        .chat-container .watermark {
+            position: sticky;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.08;
+            pointer-events: none;
+            z-index: 0;
+            margin: auto;
+            height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chat-container .watermark img {
+            width: 280px;
+            height: auto;
+        }
+        .chat-container .message {
+            position: relative;
+            z-index: 1;
         }
 
         .message {
@@ -82,13 +105,23 @@
             max-width: 90%;
         }
 
+        .message .meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
         .message .label {
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 4px;
             opacity: 0.6;
+        }
+        .message .timestamp {
+            font-size: 10px;
+            opacity: 0.5;
+            font-variant-numeric: tabular-nums;
         }
 
         /* Typing indicator */
@@ -160,7 +193,11 @@
     CrewAI Web Search Agent — Playground
 </div>
 
-<div class="chat-container" id="chat"></div>
+<div class="chat-container" id="chat">
+    <div class="watermark">
+        <img src="/images/rh_logo.svg" alt="">
+    </div>
+</div>
 
 <div class="input-area">
     <textarea id="input" placeholder="Type your message..." rows="1"
@@ -195,15 +232,31 @@
     }
     checkHealth();
 
+    function formatTimestamp() {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} - ${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())}`;
+    }
+
     function addMessage(role, content, extra) {
         const div = document.createElement('div');
         div.className = `message ${role}`;
         if (extra) div.classList.add(extra);
 
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+
         const label = document.createElement('div');
         label.className = 'label';
         label.textContent = role === 'user' ? 'You' : (role === 'error' ? 'Error' : 'Agent');
-        div.appendChild(label);
+        meta.appendChild(label);
+
+        const ts = document.createElement('div');
+        ts.className = 'timestamp';
+        ts.textContent = formatTimestamp();
+        meta.appendChild(ts);
+
+        div.appendChild(meta);
 
         const text = document.createElement('div');
         text.textContent = content;
