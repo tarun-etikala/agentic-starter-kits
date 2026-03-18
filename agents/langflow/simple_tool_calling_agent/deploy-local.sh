@@ -86,13 +86,21 @@ podman-compose up -d
 
 echo ""
 echo "Waiting for Langflow to start (this may take a minute)..."
-for i in $(seq 1 24); do
+LANGFLOW_READY=false
+for i in $(seq 1 60); do
   if curl -s http://localhost:7860/health >/dev/null 2>&1; then
+    LANGFLOW_READY=true
     echo "Langflow is ready!"
     break
   fi
   sleep 5
 done
+
+if [ "$LANGFLOW_READY" = false ]; then
+  echo "ERROR: Langflow did not start within 5 minutes."
+  echo "Check logs: podman logs local_langflow_1"
+  exit 1
+fi
 
 echo ""
 echo "=== Local environment is ready ==="
