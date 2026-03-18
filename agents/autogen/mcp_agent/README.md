@@ -105,7 +105,7 @@ uv pip install -e .
    uv run uvicorn main:app --host 0.0.0.0 --port 8080
    ```
 
-3. Test: `curl -X POST http://localhost:8080/chat/completions -H "Content-Type: application/json" -d '{"message": "What is 2+2? Use a tool if needed."}'`
+3. Test: `curl -X POST http://localhost:8080/chat/completions -H "Content-Type: application/json" -d '{"message": "What is 2+7? Use a tool!"}'`
 
 ---
 
@@ -119,8 +119,18 @@ Test the `/chat` endpoint:
 ```bash
 curl -X POST http://localhost:8080/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"message": "What is 2+2? Use a tool if needed."}'
+  -d '{"message": "What is 2+7? Use a tool!"}'
 ```
+
+**Streaming** (OpenAI-style SSE: `chat.completion.chunk` lines, then `data: [DONE]`):
+
+```bash
+curl -sN -X POST http://localhost:8080/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "What is 2+2? Use a tool if needed."}], "stream": true}'
+```
+
+You can use either `"message": "..."` or `"messages": [...]`; set `"stream": true` for token-by-token chunks.
 
 Optional: interactive chat with MCP tools (LangGraph) — from the `mcp_automl_template` directory:
 
@@ -184,6 +194,14 @@ curl -X POST https://<YOUR_ROUTE_URL>/chat/completions \
 curl -X POST https://<YOUR_ROUTE_URL>/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"message": "Predict churn for this customer: Male, 12 months tenure, fiber optic, month-to-month contract, electronic check, monthly 70.35, total 800.40."}'
+```
+
+**Streaming** (`stream: true`): response is Server-Sent Events (`chat.completion.chunk` per line, then `data: [DONE]`). Use `curl -N` or `-sN` so chunks print live:
+
+```bash
+curl -sN -X POST https://<YOUR_ROUTE_URL>/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "What is 17 + 25? Use your tools."}], "stream": true}'
 ```
 
 ---

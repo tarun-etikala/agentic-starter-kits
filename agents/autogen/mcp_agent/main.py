@@ -1,38 +1,94 @@
 import asyncio
+import json
 import logging
 import os
-from os import getenv
+import time
 import traceback
+import uuid
 from contextlib import asynccontextmanager
+from os import getenv
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from autogen_agentchat.messages import ModelClientStreamingChunkEvent, TextMessage
 from autogen_core import CancellationToken
-from autogen_agentchat.messages import TextMessage
 from autogen_ext.tools.mcp import (
     SseServerParams,
     create_mcp_server_session,
     mcp_server_tools,
 )
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field, model_validator
 
 from autogen_agent_base.agent import get_agent_chat
-from dotenv import load_dotenv
 
 load_dotenv()
 
 
-# Request/Response models (same API shape as before)
-class ChatRequest(BaseModel):
-    """Incoming chat request body for the /chat endpoint."""
+class ChatMessage(BaseModel):
+    """OpenAI-style message (optional alternative to `message`)."""
 
-    message: str
+    role: str = Field(..., description="user, assistant, or system")
+    content: str = Field(..., description="Message text")
+
+
+class ChatRequest(BaseModel):
+    """Chat request: use `message` or `messages` (last user wins); set `stream` for SSE chunks."""
+
+    message: str | None = Field(
+        None, description="Single user message (simplest). Ignored if `messages` is set."
+    )
+    messages: list[ChatMessage] | None = Field(
+        None,
+        description="OpenAI-style list; last user message is used as the task.",
+    )
+    stream: bool = Field(
+        False,
+        description="If true, response is SSE: chat.completion.chunk events, then data: [DONE].",
+    )
+
+    @model_validator(mode="after")
+    def _need_user_input(self):
+        if self.messages:
+            if not any(m.role == "user" for m in self.messages):
+                raise ValueError("messages must include at least one role=user entry")
+            return self
+        if self.message is not None and self.message != "":
+            return self
+        raise ValueError("Provide non-empty `message` or `messages` with a user turn")
+
+    def user_task(self) -> str:
+        if self.messages:
+            for m in reversed(self.messages):
+                if m.role == "user":
+                    return m.content
+        return self.message or ""
 
 
 class ChatResponse(BaseModel):
-    """Structured chat response with message history."""
+    """Non-streaming chat response (user + assistant messages)."""
 
-    messages: list[dict]
-    finish_reason: str
+    messages: list[dict] = Field(
+        ...,
+        description="Conversation turns; last entry is typically the assistant reply.",
+    )
+    finish_reason: str = Field(
+        ...,
+        description="Why generation stopped (e.g. stop).",
+        examples=["stop"],
+    )
+
+
+class HealthResponse(BaseModel):
+    """Service health status."""
+
+    status: str = Field(
+        ..., description="Current service status.", examples=["healthy"]
+    )
+    agent_initialized: bool = Field(
+        ...,
+        description="Whether the MCP-backed agent is ready to serve requests.",
+    )
 
 
 MCP_SYSTEM_PROMPT = (
@@ -97,16 +153,38 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="AutoGen Agent API (MCP)",
-    description="FastAPI service for AutoGen AssistantAgent with MCP tools (same behavior as interact_with_mcp.py)",
+    description="FastAPI service for AutoGen AssistantAgent with MCP tools. "
+    "POST /chat/completions with `message` or `messages`; set `stream: true` for OpenAI-style SSE chunks.",
     lifespan=lifespan,
+    openapi_tags=[
+        {"name": "Chat", "description": "Chat completion operations"},
+        {"name": "Health", "description": "Service health monitoring"},
+    ],
 )
 
 
-@app.post("/chat/completions", response_model=ChatResponse)
+def _assistant_content_from_result(result) -> str:
+    if not result.messages:
+        return ""
+    last = result.messages[-1]
+    if isinstance(last, TextMessage):
+        return last.content or ""
+    return getattr(last, "content", None) or str(last)
+
+
+@app.post(
+    "/chat/completions",
+    response_model=ChatResponse,
+    summary="Create chat completion",
+    description=(
+        "Creates a model response for the given chat conversation. "
+        "When `stream=false`, returns a complete JSON body with `messages` and `finish_reason`. "
+        "When `stream=true`, returns Server-Sent Events with `chat.completion.chunk` deltas "
+        "(OpenAI-style `data: {json}\\n\\n`), terminated by `data: [DONE]\\n\\n`."
+    ),
+    tags=["Chat"],
+)
 async def chat(request: ChatRequest):
-    """
-    Chat endpoint: accepts a message, runs the MCP-backed AutoGen agent, returns the response.
-    """
     agent = getattr(app.state, "mcp_agent", None)
     if agent is None:
         err = (
@@ -115,19 +193,76 @@ async def chat(request: ChatRequest):
         )
         raise HTTPException(status_code=503, detail=err)
 
+    user_text = request.user_task()
+    model_id = getenv("MODEL_ID") or "model"
+
+    if request.stream:
+
+        async def event_generator():
+            completion_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
+            created = int(time.time())
+            cancel_token = CancellationToken()
+            logger = logging.getLogger(__name__)
+            try:
+                async for ev in agent.run_stream(
+                    task=user_text,
+                    cancellation_token=cancel_token,
+                ):
+                    if isinstance(ev, ModelClientStreamingChunkEvent) and ev.content:
+                        data = {
+                            "id": completion_id,
+                            "object": "chat.completion.chunk",
+                            "created": created,
+                            "model": model_id,
+                            "choices": [
+                                {
+                                    "index": 0,
+                                    "delta": {"content": ev.content},
+                                    "finish_reason": None,
+                                }
+                            ],
+                        }
+                        yield f"data: {json.dumps(data)}\n\n"
+
+                final_data = {
+                    "id": completion_id,
+                    "object": "chat.completion.chunk",
+                    "created": created,
+                    "model": model_id,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "delta": {},
+                            "finish_reason": "stop",
+                        }
+                    ],
+                }
+                yield f"data: {json.dumps(final_data)}\n\n"
+                yield "data: [DONE]\n\n"
+            except Exception:
+                logger.exception("Error in stream event_generator")
+                err = {
+                    "error": {
+                        "message": "Internal server error",
+                        "type": "server_error",
+                    }
+                }
+                yield f"data: {json.dumps(err)}\n\n"
+
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
     try:
         cancel_token = CancellationToken()
         result = await agent.run(
-            task=request.message,
+            task=user_text,
             cancellation_token=cancel_token,
         )
-        response_messages = [{"role": "user", "content": request.message}]
-        content = ""
-        if result.messages:
-            last = result.messages[-1]
-            content = getattr(last, "content", None) or str(last)
-            if isinstance(last, TextMessage):
-                content = last.content or ""
+        response_messages = [{"role": "user", "content": user_text}]
+        content = _assistant_content_from_result(result)
         response_messages.append({"role": "assistant", "content": content})
         return ChatResponse(messages=response_messages, finish_reason="stop")
     except Exception as e:
@@ -136,9 +271,13 @@ async def chat(request: ChatRequest):
         )
 
 
-@app.get("/health")
+@app.get(
+    "/health",
+    response_model=HealthResponse,
+    summary="Health check",
+    tags=["Health"],
+)
 async def health():
-    """Return service health and whether the MCP agent is ready."""
     return {
         "status": "healthy",
         "agent_initialized": getattr(app.state, "mcp_agent", None) is not None,
