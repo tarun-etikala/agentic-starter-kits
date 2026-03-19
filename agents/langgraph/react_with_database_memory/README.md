@@ -356,6 +356,46 @@ curl -X POST https://<YOUR_ROUTE_URL>/chat/completions \
 
 ---
 
+## Playground UI
+
+A browser-based chat interface for interacting with the agent. Built with Flask, it provides a simple chat window with streaming responses and thread-based conversation persistence — no curl needed.
+
+### Prerequisites
+
+Make sure the agent is running first (see sections above), then install the playground dependency:
+
+```bash
+uv pip install flask
+```
+
+### Running the Playground
+
+```bash
+# Terminal 1: Start the agent
+uvicorn main:app --port 8000
+
+# Terminal 2: Start the playground
+flask --app playground/app run --port 5001
+```
+
+Open [http://localhost:5001](http://localhost:5001) in your browser.
+
+A green dot in the header means the agent is connected and ready. Each browser session gets a unique thread ID displayed in the header — conversation history persists in the database via that thread.
+
+### Configuration
+
+| Variable    | Default                  | Description                     |
+|-------------|--------------------------|---------------------------------|
+| `AGENT_URL` | `http://localhost:8000`  | URL of the running agent API    |
+
+If the agent runs on a different host or port:
+
+```bash
+AGENT_URL=https://your-agent-url flask --app playground/app run --port 5001
+```
+
+---
+
 ## Agent-Specific Documentation
 
 ### Architecture
