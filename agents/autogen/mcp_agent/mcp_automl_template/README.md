@@ -117,7 +117,7 @@ Standard JSON Schema with `properties` and `required`. Field types and `required
 From the project root (or the directory containing `mcp_server.py`):
 
 ```bash
-python mcp_autoai_template/mcp_server.py
+python mcp_automl_template/mcp_server.py
 ```
 
 This starts the FastMCP server (e.g. SSE on `http://127.0.0.1:8000/sse`). Built-in tools (`add`, `sub`) and all tools from `tools_config.yaml` are registered.
@@ -127,7 +127,7 @@ This starts the FastMCP server (e.g. SSE on `http://127.0.0.1:8000/sse`). Built-
 With the MCP server running, in another terminal:
 
 ```bash
-python mcp_autoai_template/interact_with_mcp.py
+python mcp_automl_template/interact_with_mcp.py
 ```
 
 This connects to the server via SSE, loads MCP tools, and runs a LangGraph ReAct agent with the configured LLM. You can type questions or use predefined prompts. The agent will call tools (e.g. `invoke_churn`) when appropriate.

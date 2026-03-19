@@ -85,7 +85,7 @@ def _make_tool_handler_flat(
                 res = httpx.post(
                     url,
                     json=data,
-                    verify=False,
+                    verify=True,
                     follow_redirects=True,
                     headers={"Authorization": f"Bearer {token}"},
                 )

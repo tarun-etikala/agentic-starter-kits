@@ -25,12 +25,19 @@ spec:
       labels:
         app: mcp-automl
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
       - name: mcp-automl
         image: "${CONTAINER_IMAGE_MCP}"
         ports:
         - containerPort: 8080
           name: http
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
         env:
         - name: PORT
           value: "8080"

@@ -36,7 +36,8 @@ class ChatRequest(BaseModel):
     """Chat request: use `message` or `messages` (last user wins); set `stream` for SSE chunks."""
 
     message: str | None = Field(
-        None, description="Single user message (simplest). Ignored if `messages` is set."
+        None,
+        description="Single user message (simplest). Ignored if `messages` is set.",
     )
     messages: list[ChatMessage] | None = Field(
         None,
@@ -267,8 +268,8 @@ async def chat(request: ChatRequest):
         return ChatResponse(messages=response_messages, finish_reason="stop")
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error processing request: {str(e)}"
-        )
+            status_code=500, detail=f"Error processing request: {e!s}"
+        ) from e
 
 
 @app.get(

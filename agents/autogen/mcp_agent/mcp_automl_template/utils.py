@@ -159,8 +159,12 @@ def get_chat_llama_stack():
     llama_api_key = getenv("LLAMA_STACK_CLIENT_API_KEY")
     model_id = getenv("MODEL_ID")
 
+    url = llama_base_url.rstrip("/") if llama_base_url else ""
+    if not url.endswith("/v1"):
+        url = url + "/v1"
+
     return ChatLlamaStack(
-        base_url=f"{llama_base_url}/v1",
+        base_url=url,
         api_key=llama_api_key,
         model=model_id,
         temperature=0.1,
