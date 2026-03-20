@@ -174,7 +174,8 @@ The script will:
 - Build and deploy the MCP server (from `mcp_automl_template`),
 - Build and push the agent image,
 - Create a Secret for the API key,
-- Deploy the agent Deployment, Service, and Route.
+- Deploy the agent Deployment, Service, and Route,
+- Set the agent’s `MCP_SERVER_URL` to the **in-cluster** MCP Service (`http://mcp-automl:8080/sse` by default; no `.env` entry required).
 
 Get the agent Route URL:
 

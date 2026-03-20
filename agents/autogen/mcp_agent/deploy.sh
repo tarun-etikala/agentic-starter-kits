@@ -17,6 +17,8 @@ _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/load_env_safe.sh
 source "${_SCRIPT_DIR}/scripts/load_env_safe.sh"
 load_env_safe "${_SCRIPT_DIR}/.env"
+# In-cluster agent must reach MCP via Service DNS (Route from inside often returns 503).
+export MCP_SERVER_URL="${MCP_SERVER_URL:-http://mcp-automl:8080/sse}"
 export CONTAINER_IMAGE BASE_URL MODEL_ID
 export CONTAINER_IMAGE_MCP DEPLOYMENT_URL DEPLOYMENT_TOKEN
 
@@ -25,11 +27,7 @@ export CONTAINER_IMAGE_MCP DEPLOYMENT_URL DEPLOYMENT_TOKEN
 ## ============================================
 ./mcp_automl_template/deploy_mcp.sh
 
-# Set MCP_SERVER_URL from MCP Route (for agent deployment on cluster only)
-MCP_ROUTE_HOST=$(oc get route mcp-automl -o jsonpath='{.spec.host}' 2>/dev/null || true)
-export MCP_SERVER_URL="https://${MCP_ROUTE_HOST}/sse"
-echo "MCP_SERVER_URL set to ${MCP_SERVER_URL}"
-
+echo "Agent MCP_SERVER_URL (in-cluster): ${MCP_SERVER_URL}"
 
 ## ============================================
 # DOCKER BUILD – AutoGen Agent

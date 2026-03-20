@@ -13,10 +13,10 @@ load_dotenv()
 _host = getenv("HOST", "0.0.0.0")
 # Disable DNS rebinding check so any Host (e.g. OpenShift Route) is accepted.
 disable_dns_rebinding = (
-    getenv("DISABLE_DNS_REBINDING_PROTECTION", "false").lower() == "true"
+    getenv("DISABLE_DNS_REBINDING_PROTECTION", "true").lower() == "true"
 )
 _transport_security = TransportSecuritySettings(
-    enable_dns_rebinding_protection=disable_dns_rebinding
+    enable_dns_rebinding_protection=not disable_dns_rebinding
 )
 # Create an MCP server
 mcp = FastMCP(
