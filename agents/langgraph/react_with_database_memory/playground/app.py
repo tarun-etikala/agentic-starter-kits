@@ -26,7 +26,7 @@ from flask import (
     jsonify,
     render_template,
     request,
-    send_file,
+    send_from_directory,
     stream_with_context,
 )
 
@@ -41,7 +41,7 @@ app = Flask(__name__)
 @app.route("/images/<path:filename>")
 def serve_image(filename):
     """Serve images from the project-level images directory."""
-    return send_file(IMAGES_DIR / filename)
+    return send_from_directory(IMAGES_DIR, filename)
 
 
 AGENT_URL = getenv("AGENT_URL", "http://localhost:8000")
