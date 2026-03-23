@@ -20,6 +20,7 @@ Agents are organized by framework. Pick one and follow its README:
 | **LlamaIndex** | [WebSearch Agent](./agents/llamaindex/websearch_agent/) | Agent built on LlamaIndex that uses a web search tool to query the internet and use the results in its answers. |
 | **CrewAI** | [WebSearch Agent](./agents/crewai/websearch_agent/) | CrewAI-based agent with a web search tool to query the internet and answer user questions. |
 | **Vanilla Python** | [OpenAI Responses Agent](./agents/vanilla_python/openai_responses_agent/) | Minimal agent with no framework: only the OpenAI Python client and an Action/Observation loop with tools. Use with OpenAI or any compatible API. |
+| **Langflow** | [Simple Tool Calling Agent](./agents/langflow/simple_tool_calling_agent/) | Outdoor activity planner built with Langflow's visual UI. Uses weather, air quality, and NPS APIs. Runs via `podman-compose` (see its own README). |
 
 ## Quick Start
 
@@ -39,7 +40,7 @@ make run         # starts on http://localhost:8080
 
 ## Deployment
 
-Every agent can be deployed to OpenShift (or any Kubernetes cluster) using the shared Helm chart:
+Most agents can be deployed to OpenShift (or any Kubernetes cluster) using the shared Helm chart:
 
 ```bash
 cd agents/langgraph/react_agent
@@ -74,8 +75,10 @@ agentic-starter-kits/
 │   │   └── websearch_agent/         # CrewAI web search agent
 │   ├── llamaindex/
 │   │   └── websearch_agent/         # LlamaIndex web search agent
-│   └── vanilla_python/
-│       └── openai_responses_agent/  # OpenAI Responses API (no framework)
+│   ├── vanilla_python/
+│   │   └── openai_responses_agent/  # OpenAI Responses API (no framework)
+│   └── langflow/
+│       └── simple_tool_calling_agent/ # Langflow visual agent (podman-compose)
 ├── charts/
 │   └── agent/                       # Shared Helm chart for all agents
 ├── docs/                            # Guides: deployment, local dev, contributing
@@ -84,7 +87,7 @@ agentic-starter-kits/
 └── README.md
 ```
 
-Each agent directory contains:
+Each Helm-based agent directory contains:
 
 ```
 agent-name/

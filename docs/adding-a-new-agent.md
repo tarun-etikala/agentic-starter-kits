@@ -11,6 +11,7 @@ agents/
   langgraph/        # LangGraph-based agents
   llamaindex/       # LlamaIndex-based agents
   vanilla_python/   # Vanilla Python agents (no framework)
+  langflow/         # Langflow visual agents
   <new-framework>/  # Add a new framework directory if needed
 ```
 
