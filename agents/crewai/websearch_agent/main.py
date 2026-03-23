@@ -5,6 +5,7 @@ import re
 import time
 import uuid
 from contextlib import asynccontextmanager
+import os
 from os import getenv
 from pathlib import Path
 
@@ -385,7 +386,9 @@ async def serve_image(filename: str):
     """Serve images from the project-level images directory."""
     base = _IMAGES_DIR.resolve()
     file_path = (base / filename).resolve()
-    if not file_path.is_relative_to(base):
+    base_str = str(base)
+    file_path_str = str(file_path)
+    if not (file_path_str == base_str or file_path_str.startswith(base_str + os.path.sep)):
         raise HTTPException(status_code=404, detail="Image not found")
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Image not found")
