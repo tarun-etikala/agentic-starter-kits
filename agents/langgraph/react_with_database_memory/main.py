@@ -12,7 +12,6 @@ from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, System
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from pydantic import BaseModel, Field
-import os
 from os import getenv
 
 from react_with_database_memory.agent import get_graph_closure
@@ -487,9 +486,9 @@ async def serve_image(filename: str):
     """Serve images from the project-level images directory."""
     base = _IMAGES_DIR.resolve()
     file_path = (base / filename).resolve()
-    base_str = str(base)
-    file_path_str = str(file_path)
-    if not (file_path_str == base_str or file_path_str.startswith(base_str + os.path.sep)):
+    try:
+        file_path.relative_to(base)
+    except ValueError:
         raise HTTPException(status_code=404, detail="Image not found")
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Image not found")
