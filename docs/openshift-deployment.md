@@ -49,6 +49,14 @@ make build-openshift
 
 This creates a BuildConfig (if it doesn't exist) and uploads your local source to OpenShift, which builds the image in-cluster using its internal registry.
 
+After the build completes, set `CONTAINER_IMAGE` in your `.env` to the internal registry URL:
+
+```
+CONTAINER_IMAGE=image-registry.openshift-image-registry.svc:5000/<namespace>/<agent-name>:latest
+```
+
+Replace `<namespace>` with your OpenShift project name (run `oc project -q` to check).
+
 ### 4. Preview Rendered Manifests (optional)
 
 Before deploying, you can inspect exactly what Kubernetes resources will be created:

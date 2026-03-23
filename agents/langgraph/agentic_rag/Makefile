@@ -9,12 +9,11 @@ help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
 
 init: ## Copy .env.example to .env for configuration
-	@test -f .env || cp .env.example .env
-	@echo "Created .env from .env.example — edit it with your configuration"
+	@if [ ! -f .env ]; then cp .env.example .env && echo "Created .env from .env.example — edit it with your configuration"; else echo ".env already exists — skipping"; fi
 
 run: ## Run agent locally with hot-reload
 	@set -a && source .env && set +a && \
-	  uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+	  uv run uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 
 build: ## Build and push container image (podman/docker)
 	@source .env && \
@@ -26,7 +25,7 @@ build-openshift: ## Build image in-cluster via OpenShift BuildConfig (no podman/
 	@oc start-build $(AGENT_NAME) --from-dir=. --follow
 
 _check-env:
-	@source .env 2>/dev/null; \
+	@set -a && source .env 2>/dev/null && set +a; \
 	  python3 -c "import re,os,sys; \
 	    text=open('agent.yaml').read(); \
 	    block=re.split(r'\n\s+\w+:',text.split('required:')[1],1)[0] if 'required:' in text else ''; \
@@ -36,7 +35,7 @@ _check-env:
 
 deploy: _check-env ## Deploy to OpenShift/K8s via Helm
 	@source .env && \
-	  IMAGE_REPO="$${CONTAINER_IMAGE%%:*}" && \
+	  IMAGE_REPO="$${CONTAINER_IMAGE%:*}" && \
 	  IMAGE_TAG="$${CONTAINER_IMAGE##*:}" && \
 	  helm upgrade --install $(AGENT_NAME) $(CHART_DIR) \
 	    -f $(VALUES_FILE) \
@@ -50,7 +49,7 @@ deploy: _check-env ## Deploy to OpenShift/K8s via Helm
 
 dry-run: _check-env ## Render Helm templates without deploying
 	@source .env && \
-	  IMAGE_REPO="$${CONTAINER_IMAGE%%:*}" && \
+	  IMAGE_REPO="$${CONTAINER_IMAGE%:*}" && \
 	  IMAGE_TAG="$${CONTAINER_IMAGE##*:}" && \
 	  helm template $(AGENT_NAME) $(CHART_DIR) \
 	    -f $(VALUES_FILE) \

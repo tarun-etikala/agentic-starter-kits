@@ -1,9 +1,9 @@
 # OpenAI Responses Agent – OpenAI client + pure Python (Responses API, no agentic framework). Python 3.12+.
-FROM python:3.12-slim
+# Use Red Hat UBI9 Python 3.12 image (no Docker Hub rate limits on OpenShift)
+FROM registry.access.redhat.com/ubi9/python-312:latest
 
-WORKDIR /app
-
-RUN groupadd -r appuser && useradd -r -u 1001 -g appuser appuser
+# Switch to root for installing dependencies
+USER 0
 
 # Install uv for fast dependency management
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
@@ -18,11 +18,14 @@ RUN uv pip install --system --no-cache .
 # Copy the application entrypoint
 COPY main.py .
 
-RUN chown -R appuser:appuser /app
-USER appuser
+# Ensure app directory is owned by default user (UID 1001)
+RUN chown -R 1001:0 /opt/app-root/src && chmod -R g=u /opt/app-root/src
+
+# Switch back to default non-root user
+USER 1001
 
 EXPOSE 8080
 ENV PORT=8080
-ENV PYTHONPATH=/app:/app/src
+ENV PYTHONPATH=/opt/app-root/src
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

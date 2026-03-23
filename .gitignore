@@ -1,6 +1,5 @@
 .env*
 !.env.example
-.env
 .vscode
 .idea
 .DS_Store

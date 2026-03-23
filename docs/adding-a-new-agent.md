@@ -33,7 +33,7 @@ Every agent must have:
 | `values.yaml` | Helm values override (nameOverride, env vars, resources) |
 | `.env.example` | Template for local environment variables |
 | `Makefile` | Consistent interface: init, run, build, build-openshift, deploy, dry-run, test |
-| `Dockerfile` | Container build (Python 3.12, non-root user, port 8080) |
+| `Dockerfile` | Container build (UBI9 Python 3.12, non-root user, port 8080) |
 | `pyproject.toml` | Python dependencies |
 | `main.py` | FastAPI app with /chat/completions, /health endpoints |
 | `README.md` | Setup, usage, and deployment instructions |
@@ -84,11 +84,11 @@ Every Makefile includes a `build-openshift` target for in-cluster builds (no Pod
 
 ## 8. Dockerfile Conventions
 
-- Base image: `python:3.12-slim`
-- Non-root user: `appuser` (UID 1001) for OpenShift compatibility
+- Base image: `registry.access.redhat.com/ubi9/python-312:latest` (avoids Docker Hub rate limits on OpenShift)
+- Non-root user: UID 1001 (UBI9 default) with GID 0 for OpenShift arbitrary UID support
 - Port: 8080
 - Use `uv pip install` for dependencies
-- Set `PYTHONPATH=/app:/app/src`
+- Set `PYTHONPATH=/opt/app-root/src`
 
 ## 9. Test Your Agent
 
