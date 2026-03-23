@@ -31,7 +31,7 @@ Every agent must have:
 | `agent.yaml` | Metadata: name, framework, description, required env vars |
 | `values.yaml` | Helm values override (nameOverride, env vars, resources) |
 | `.env.example` | Template for local environment variables |
-| `Makefile` | Consistent interface: init, run, build, deploy, test |
+| `Makefile` | Consistent interface: init, run, build, build-openshift, deploy, dry-run, test |
 | `Dockerfile` | Container build (Python 3.12, non-root user, port 8080) |
 | `pyproject.toml` | Python dependencies |
 | `main.py` | FastAPI app with /chat/completions, /health endpoints |
@@ -71,7 +71,15 @@ Set `nameOverride` to match `agent.yaml`'s `name` field. Add any agent-specific 
 
 ## 7. Update Makefile
 
-If your agent has extra env vars, add them as `--set` flags in the `deploy` target.
+If your agent has extra env vars, add them as `--set` flags in the `deploy` and `dry-run` targets.
+
+The Makefile auto-detects Podman or Docker (preferring Podman) via:
+
+```makefile
+CONTAINER_CLI := $(shell command -v podman 2>/dev/null || command -v docker 2>/dev/null)
+```
+
+Every Makefile includes a `build-openshift` target for in-cluster builds (no Podman/Docker needed).
 
 ## 8. Dockerfile Conventions
 
@@ -85,8 +93,10 @@ If your agent has extra env vars, add them as `--set` flags in the `deploy` targ
 
 ```bash
 cd agents/<framework>/<your_agent>
-make init && make run          # local test
-make build && make deploy      # OpenShift test
+make init && make run                # local test
+make dry-run                         # preview Helm manifests
+make build && make deploy            # OpenShift test (via registry)
+make build-openshift && make deploy  # OpenShift test (in-cluster build)
 ```
 
 ## 10. Update Root README

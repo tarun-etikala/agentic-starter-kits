@@ -43,8 +43,20 @@ Every agent can be deployed to OpenShift (or any Kubernetes cluster) using the s
 
 ```bash
 cd agents/langgraph/react_agent
-make build       # builds and pushes container image
-make deploy      # deploys via Helm
+
+# Option A: Build locally with Podman (or Docker) and push to a registry
+make build            # builds and pushes container image
+make deploy           # deploys via Helm
+
+# Option B: Build in-cluster on OpenShift (no Podman/Docker needed)
+make build-openshift  # builds image via OpenShift BuildConfig
+make deploy           # deploys via Helm
+```
+
+Preview rendered Helm manifests before deploying:
+
+```bash
+make dry-run
 ```
 
 See [OpenShift Deployment Guide](./docs/openshift-deployment.md) for details.
@@ -79,7 +91,7 @@ agent-name/
 ├── agent.yaml         # Agent metadata and required env vars
 ├── values.yaml        # Helm values override for this agent
 ├── .env.example       # Environment variable template
-├── Makefile           # make init, run, build, deploy, test
+├── Makefile           # make init, run, build, build-openshift, deploy, dry-run, test
 ├── Dockerfile         # Container build
 ├── pyproject.toml     # Python dependencies
 ├── main.py            # FastAPI app (/chat/completions, /health)

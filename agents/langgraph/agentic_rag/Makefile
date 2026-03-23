@@ -1,8 +1,9 @@
-AGENT_NAME  := $(shell grep 'nameOverride' values.yaml | head -1 | awk '{print $$2}' | tr -d '"')
-CHART_DIR   := ../../../charts/agent
-VALUES_FILE := values.yaml
+AGENT_NAME     := $(shell python3 -c "import re; print(re.search(r'^name:\s*(.+)', open('agent.yaml').read(), re.M).group(1).strip())")
+CHART_DIR      := ../../../charts/agent
+VALUES_FILE    := values.yaml
+CONTAINER_CLI  := $(shell command -v podman 2>/dev/null || command -v docker 2>/dev/null)
 
-.PHONY: init run build deploy undeploy test help
+.PHONY: init run build build-openshift deploy undeploy test dry-run help
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -15,17 +16,45 @@ run: ## Run agent locally with hot-reload
 	@set -a && source .env && set +a && \
 	  uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 
-build: ## Build and push container image
+build: ## Build and push container image (podman/docker)
 	@source .env && \
-	  docker buildx build --platform linux/amd64 -t "$${CONTAINER_IMAGE}" -f Dockerfile --push .
+	  $(CONTAINER_CLI) build --platform linux/amd64 -t "$${CONTAINER_IMAGE}" -f Dockerfile . && \
+	  $(CONTAINER_CLI) push "$${CONTAINER_IMAGE}"
 
-deploy: ## Deploy to OpenShift/K8s via Helm
+build-openshift: ## Build image in-cluster via OpenShift BuildConfig (no podman/docker needed)
+	@oc new-build --strategy=docker --binary --name=$(AGENT_NAME) --to=$(AGENT_NAME):latest 2>/dev/null || true
+	@oc start-build $(AGENT_NAME) --from-dir=. --follow
+
+_check-env:
+	@source .env 2>/dev/null; \
+	  python3 -c "import re,os,sys; \
+	    text=open('agent.yaml').read(); \
+	    block=re.split(r'\n\s+\w+:',text.split('required:')[1],1)[0] if 'required:' in text else ''; \
+	    required=re.findall(r'^\s+-\s+(\S+)',block,re.M); \
+	    missing=[v for v in required if not os.environ.get(v)]; \
+	    sys.exit('ERROR: Missing required env vars: '+', '.join(missing)) if missing else None"
+
+deploy: _check-env ## Deploy to OpenShift/K8s via Helm
 	@source .env && \
 	  IMAGE_REPO="$${CONTAINER_IMAGE%%:*}" && \
 	  IMAGE_TAG="$${CONTAINER_IMAGE##*:}" && \
 	  helm upgrade --install $(AGENT_NAME) $(CHART_DIR) \
 	    -f $(VALUES_FILE) \
 	    --set secrets.apiKey="$${API_KEY}" \
+	    --set image.repository="$${IMAGE_REPO}" \
+	    --set image.tag="$${IMAGE_TAG}" \
+	    --set env.BASE_URL="$${BASE_URL}" \
+	    --set env.MODEL_ID="$${MODEL_ID}" \
+	    --set env.EMBEDDING_MODEL="$${EMBEDDING_MODEL}" \
+	    --set env.VECTOR_STORE_ID="$${VECTOR_STORE_ID}"
+
+dry-run: _check-env ## Render Helm templates without deploying
+	@source .env && \
+	  IMAGE_REPO="$${CONTAINER_IMAGE%%:*}" && \
+	  IMAGE_TAG="$${CONTAINER_IMAGE##*:}" && \
+	  helm template $(AGENT_NAME) $(CHART_DIR) \
+	    -f $(VALUES_FILE) \
+	    --set secrets.apiKey="REDACTED" \
 	    --set image.repository="$${IMAGE_REPO}" \
 	    --set image.tag="$${IMAGE_TAG}" \
 	    --set env.BASE_URL="$${BASE_URL}" \

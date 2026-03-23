@@ -90,8 +90,16 @@ make run
 ## Deploying to OpenShift
 
 ```bash
-make build       # builds and pushes container image
-make deploy      # deploys via Helm
+# Option A: Build locally with Podman (or Docker) and push to a registry
+make build            # builds and pushes container image
+make deploy           # deploys via Helm
+
+# Option B: Build in-cluster on OpenShift (no Podman/Docker needed)
+make build-openshift  # builds image via OpenShift BuildConfig
+make deploy
+
+# Preview rendered manifests before deploying
+make dry-run
 ```
 
 See [OpenShift Deployment](../../../docs/openshift-deployment.md) for details.

@@ -6,8 +6,8 @@ This guide covers deploying any agent from this repository to an OpenShift clust
 
 - [oc CLI](https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html) installed and logged in
 - [Helm 3](https://helm.sh/docs/intro/install/) installed
-- [Podman](https://podman.io/) or Docker installed
-- Access to a container registry (e.g., Quay.io)
+- [Podman](https://podman.io/) installed (recommended) or Docker — only needed for Option A below
+- Access to a container registry (e.g., Quay.io) — only needed for Option A below
 - An OpenShift cluster with permissions to create Deployments, Services, and Routes
 
 ## Steps
@@ -27,15 +27,39 @@ make init        # creates .env from .env.example
 vi .env          # fill in API_KEY, BASE_URL, MODEL_ID, CONTAINER_IMAGE
 ```
 
-### 3. Build and Push the Container Image
+### 3. Build the Container Image
+
+#### Option A: Build locally and push to a registry
+
+Requires Podman (or Docker) and a registry account (e.g., Quay.io).
 
 ```bash
 make build
 ```
 
-This builds a linux/amd64 image and pushes it to the registry specified in `CONTAINER_IMAGE`.
+This builds a linux/amd64 image and pushes it to the registry specified in `CONTAINER_IMAGE`. The Makefile auto-detects Podman or Docker (preferring Podman).
 
-### 4. Deploy with Helm
+#### Option B: Build in-cluster via OpenShift BuildConfig
+
+No Podman, Docker, or registry account needed — just the `oc` CLI.
+
+```bash
+make build-openshift
+```
+
+This creates a BuildConfig (if it doesn't exist) and uploads your local source to OpenShift, which builds the image in-cluster using its internal registry.
+
+### 4. Preview Rendered Manifests (optional)
+
+Before deploying, you can inspect exactly what Kubernetes resources will be created:
+
+```bash
+make dry-run
+```
+
+Secrets are redacted in the output.
+
+### 5. Deploy with Helm
 
 ```bash
 make deploy
@@ -52,7 +76,9 @@ helm upgrade --install <agent-name> ../../charts/agent \
   --set env.MODEL_ID="$MODEL_ID"
 ```
 
-### 5. Verify
+If any required environment variables are missing, `make deploy` will fail with a clear error listing which variables need to be set.
+
+### 6. Verify
 
 ```bash
 oc get pods -l app=<agent-name>
@@ -61,7 +87,7 @@ oc get route <agent-name>
 
 The route URL is your agent's public endpoint.
 
-### 6. Remove
+### 7. Remove
 
 ```bash
 make undeploy
