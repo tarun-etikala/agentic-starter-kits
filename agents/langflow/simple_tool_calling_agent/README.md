@@ -8,7 +8,11 @@
 
 ## What this agent does
 
-Outdoor activity assistant built with Langflow. It helps you decide whether conditions are good for any outdoor activity — walking, hiking, cycling, picnics, park visits, or anything else outside. It reasons across weather forecasts and National Park Service data to give a clear recommendation.
+A tool-calling agent built with Langflow's visual flow builder. It calls external APIs as tools (weather forecasts, national park data) and reasons over the results to answer user questions. Includes Langfuse v3 tracing out of the box. Runs locally via `podman-compose`.
+
+### Included demo flow
+
+The shipped flow is an outdoor activity assistant — it checks weather conditions and national park alerts to help decide if conditions are good for outdoor activities.
 
 **Example queries:**
 - *"Can I go walking in Boston tomorrow at 3 PM?"*
