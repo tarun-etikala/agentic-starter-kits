@@ -6,8 +6,16 @@ import traceback
 import uuid
 from contextlib import asynccontextmanager
 from os import getenv
+from pathlib import Path
 
-from autogen_agentchat.messages import ModelClientStreamingChunkEvent, TextMessage
+from autogen_agentchat.base._task import TaskResult
+from autogen_agentchat.messages import (
+    ModelClientStreamingChunkEvent,
+    TextMessage,
+    ToolCallExecutionEvent,
+    ToolCallRequestEvent,
+    ToolCallSummaryMessage,
+)
 from autogen_core import CancellationToken
 from autogen_ext.tools.mcp import (
     SseServerParams,
@@ -16,7 +24,7 @@ from autogen_ext.tools.mcp import (
 )
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field, model_validator
 
 from autogen_agent_base.agent import get_agent_chat
@@ -25,26 +33,43 @@ load_dotenv()
 
 
 class ChatMessage(BaseModel):
-    """OpenAI-style message (optional alternative to `message`)."""
+    """A message in the conversation."""
 
-    role: str = Field(..., description="user, assistant, or system")
-    content: str = Field(..., description="Message text")
+    role: str = Field(
+        ...,
+        description="The role of the message author.",
+        examples=["user", "assistant", "system"],
+    )
+    content: str = Field(
+        ...,
+        description="The contents of the message.",
+        examples=["What is 17 + 25? Use your tools to compute it."],
+    )
 
 
 class ChatRequest(BaseModel):
-    """Chat request: use `message` or `messages` (last user wins); set `stream` for SSE chunks."""
+    """Creates a model response for the given chat conversation (MCP-backed AutoGen agent).
+
+    [See OpenAI chat docs](https://platform.openai.com/docs/api-reference/chat/create)
+    """
 
     message: str | None = Field(
         None,
-        description="Single user message (simplest). Ignored if `messages` is set.",
+        description=(
+            "Single user message (shortcut). Ignored if `messages` is set. "
+            "Either this or `messages` with at least one user turn is required."
+        ),
     )
     messages: list[ChatMessage] | None = Field(
         None,
-        description="OpenAI-style list; last user message is used as the task.",
+        description="A list of messages comprising the conversation so far; last user message is used as the task.",
     )
     stream: bool = Field(
         False,
-        description="If true, response is SSE: chat.completion.chunk events, then data: [DONE].",
+        description=(
+            "If true, partial message deltas are sent as SSE `data: {json}\\n\\n` events "
+            "(object `chat.completion.chunk`), terminated by `data: [DONE]\\n\\n`."
+        ),
     )
 
     @model_validator(mode="after")
@@ -66,28 +91,37 @@ class ChatRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    """Non-streaming chat response (user + assistant messages)."""
+    """Non-streaming response: simplified chat turns (not full OpenAI `chat.completion` object)."""
 
     messages: list[dict] = Field(
         ...,
-        description="Conversation turns; last entry is typically the assistant reply.",
+        description="Conversation turns (`role` / `content`); last entry is the assistant reply.",
     )
     finish_reason: str = Field(
         ...,
-        description="Why generation stopped (e.g. stop).",
+        description="Why generation stopped.",
         examples=["stop"],
+    )
+    tool_invocations: list[dict] = Field(
+        default_factory=list,
+        description=(
+            "MCP tools used in this turn: each entry has `name`, `arguments`, `result` (truncated), "
+            "`is_error` if applicable."
+        ),
     )
 
 
 class HealthResponse(BaseModel):
-    """Service health status."""
+    """Service health: HTTP 200 when the agent is ready; 503 until MCP-backed agent initialized."""
 
     status: str = Field(
-        ..., description="Current service status.", examples=["healthy"]
+        ...,
+        description="`healthy` when ready, `not_ready` when initialization is incomplete or failed.",
+        examples=["healthy"],
     )
     agent_initialized: bool = Field(
         ...,
-        description="Whether the MCP-backed agent is ready to serve requests.",
+        description="Whether the AutoGen agent connected to MCP and is ready to serve `/chat/completions`.",
     )
 
 
@@ -152,9 +186,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="AutoGen Agent API (MCP)",
-    description="FastAPI service for AutoGen AssistantAgent with MCP tools. "
-    "POST /chat/completions with `message` or `messages`; set `stream: true` for OpenAI-style SSE chunks.",
+    title="AutoGen Agent (MCP) API",
+    description=(
+        "FastAPI service for an AutoGen AssistantAgent with MCP tools over SSE, "
+        "with an OpenAI-compatible `POST /chat/completions` API. "
+        "When `stream=false`, returns JSON with `messages` and `finish_reason`. "
+        "When `stream=true`, returns Server-Sent Events with `chat.completion.chunk` deltas. "
+        "Open `GET /` for an interactive playground."
+    ),
     lifespan=lifespan,
     openapi_tags=[
         {"name": "Chat", "description": "Chat completion operations"},
@@ -172,15 +211,104 @@ def _assistant_content_from_result(result) -> str:
     return getattr(last, "content", None) or str(last)
 
 
+_MAX_TOOL_RESULT_CHARS = 2000
+
+
+def _truncate_tool_result(text: str) -> str:
+    if len(text) > _MAX_TOOL_RESULT_CHARS:
+        return text[:_MAX_TOOL_RESULT_CHARS] + "…"
+    return text
+
+
+def _invocation_row(call, res) -> dict:
+    """Pair FunctionCall + FunctionExecutionResult for API / playground."""
+    args_raw = getattr(call, "arguments", "") or ""
+    try:
+        args_out: str | dict | list = (
+            json.loads(args_raw) if args_raw.strip() else {}
+        )
+    except json.JSONDecodeError:
+        args_out = args_raw
+    content = (getattr(res, "content", None) or "") or ""
+    return {
+        "name": getattr(call, "name", "") or "",
+        "arguments": args_out,
+        "result": _truncate_tool_result(str(content)),
+        "is_error": bool(getattr(res, "is_error", False)),
+    }
+
+
+def _invocation_row_result_only(res) -> dict:
+    content = (getattr(res, "content", None) or "") or ""
+    return {
+        "name": getattr(res, "name", "") or "",
+        "arguments": None,
+        "result": _truncate_tool_result(str(content)),
+        "is_error": bool(getattr(res, "is_error", False)),
+    }
+
+
+def _invocations_from_tool_summary(msg: ToolCallSummaryMessage) -> list[dict]:
+    rows: list[dict] = []
+    calls = msg.tool_calls or []
+    results = msg.results or []
+    for i, call in enumerate(calls):
+        res = results[i] if i < len(results) else None
+        if res is not None:
+            rows.append(_invocation_row(call, res))
+    return rows
+
+
+def _tool_invocations_from_task_messages(messages) -> list[dict]:
+    """Collect tool rows from AssistantAgent stream/run messages.
+
+    With ``reflect_on_tool_use=True`` (default), tools appear as
+    ``ToolCallRequestEvent`` + ``ToolCallExecutionEvent``, not ``ToolCallSummaryMessage``.
+    """
+    out: list[dict] = []
+    last_request_calls: list | None = None
+
+    for m in messages or []:
+        if isinstance(m, ToolCallRequestEvent):
+            last_request_calls = list(m.content)
+        elif isinstance(m, ToolCallExecutionEvent):
+            results = list(m.content or [])
+            if last_request_calls and len(last_request_calls) == len(results):
+                for call, res in zip(last_request_calls, results):
+                    out.append(_invocation_row(call, res))
+            elif last_request_calls:
+                by_id = {
+                    getattr(c, "id", ""): c
+                    for c in last_request_calls
+                    if getattr(c, "id", None)
+                }
+                for res in results:
+                    cid = getattr(res, "call_id", "") or ""
+                    call = by_id.get(cid)
+                    if call is not None:
+                        out.append(_invocation_row(call, res))
+                    else:
+                        out.append(_invocation_row_result_only(res))
+            else:
+                for res in results:
+                    out.append(_invocation_row_result_only(res))
+            last_request_calls = None
+        elif isinstance(m, ToolCallSummaryMessage):
+            out.extend(_invocations_from_tool_summary(m))
+
+    return out
+
+
 @app.post(
     "/chat/completions",
     response_model=ChatResponse,
     summary="Create chat completion",
     description=(
         "Creates a model response for the given chat conversation. "
-        "When `stream=false`, returns a complete JSON body with `messages` and `finish_reason`. "
-        "When `stream=true`, returns Server-Sent Events with `chat.completion.chunk` deltas "
-        "(OpenAI-style `data: {json}\\n\\n`), terminated by `data: [DONE]\\n\\n`."
+        "When `stream=false`, returns a complete JSON object with `messages` and `finish_reason`. "
+        "When `stream=true`, returns Server-Sent Events with `chat.completion.chunk` deltas. "
+        "If any MCP tools run, an extra event with `object`: `mcp.tool_usage` is sent before `[DONE]` "
+        "(extension to OpenAI streaming; clients can ignore it)."
     ),
     tags=["Chat"],
 )
@@ -204,10 +332,14 @@ async def chat(request: ChatRequest):
             cancel_token = CancellationToken()
             logger = logging.getLogger(__name__)
             try:
+                stream_tools: list[dict] = []
                 async for ev in agent.run_stream(
                     task=user_text,
                     cancellation_token=cancel_token,
                 ):
+                    if isinstance(ev, TaskResult):
+                        stream_tools = _tool_invocations_from_task_messages(ev.messages)
+                        continue
                     if isinstance(ev, ModelClientStreamingChunkEvent) and ev.content:
                         data = {
                             "id": completion_id,
@@ -223,6 +355,9 @@ async def chat(request: ChatRequest):
                             ],
                         }
                         yield f"data: {json.dumps(data)}\n\n"
+
+                if stream_tools:
+                    yield f"data: {json.dumps({'object': 'mcp.tool_usage', 'tools': stream_tools})}\n\n"
 
                 final_data = {
                     "id": completion_id,
@@ -265,7 +400,12 @@ async def chat(request: ChatRequest):
         response_messages = [{"role": "user", "content": user_text}]
         content = _assistant_content_from_result(result)
         response_messages.append({"role": "assistant", "content": content})
-        return ChatResponse(messages=response_messages, finish_reason="stop")
+        tools_used = _tool_invocations_from_task_messages(result.messages)
+        return ChatResponse(
+            messages=response_messages,
+            finish_reason="stop",
+            tool_invocations=tools_used,
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error processing request: {e!s}"
@@ -276,6 +416,10 @@ async def chat(request: ChatRequest):
     "/health",
     response_model=HealthResponse,
     summary="Health check",
+    description=(
+        "Returns 200 when the MCP-backed agent is ready; 503 with `not_ready` until initialization completes "
+        "so Kubernetes readiness probes can hold traffic until the service is usable."
+    ),
     tags=["Health"],
 )
 async def health():
@@ -287,6 +431,34 @@ async def health():
     if not agent_initialized:
         return JSONResponse(status_code=503, content=body)
     return body
+
+
+# ── Playground UI ────────────────────────────────────────────────────────────
+_BASE_DIR = Path(__file__).resolve().parent
+_PLAYGROUND_HTML = _BASE_DIR / "playground" / "templates" / "index.html"
+_IMAGES_DIR = _BASE_DIR / "images"
+if not _IMAGES_DIR.is_dir():
+    _IMAGES_DIR = _BASE_DIR.parent.parent.parent / "images"
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def playground():
+    """Serve the playground chat UI."""
+    return FileResponse(_PLAYGROUND_HTML)
+
+
+@app.get("/images/{filename:path}", include_in_schema=False)
+async def serve_image(filename: str):
+    """Serve images from the project-level images directory."""
+    base = _IMAGES_DIR.resolve()
+    file_path = (base / filename).resolve()
+    try:
+        file_path.relative_to(base)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Image not found") from None
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Image not found")
+    return FileResponse(file_path)
 
 
 if __name__ == "__main__":

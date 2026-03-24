@@ -108,6 +108,8 @@ uv pip install -e .
 
 3. Test: `curl -X POST http://localhost:8080/chat/completions -H "Content-Type: application/json" -d '{"message": "What is 2+7? Use a tool!"}'`
 
+4. Optional: open **http://localhost:8080/** for the chat playground (includes an **MCP tools** panel for the last reply), or **http://localhost:8080/docs** for Swagger UI. Non-streaming `POST /chat/completions` includes `tool_invocations` in JSON; streaming sends an extra SSE object `mcp.tool_usage` before `[DONE]` (OpenAI extension).
+
 ---
 
 **Details:**
@@ -166,7 +168,7 @@ chmod +x init.sh deploy.sh
 Build images and deploy (MCP first, then the agent):
 
 ```bash
-./init.sh
+source ./init.sh
 ./deploy.sh
 ```
 
