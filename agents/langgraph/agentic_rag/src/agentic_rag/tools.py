@@ -32,6 +32,8 @@ def get_retriever_components(
     # Get configuration from environment if not provided
     if not base_url:
         base_url = getenv("BASE_URL")
+    if base_url and base_url.endswith("/v1"):
+        base_url = base_url[:-3]
     vector_store_id = getenv("VECTOR_STORE_ID")
     if not vector_store_id:
         raise RuntimeError(

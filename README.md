@@ -93,6 +93,12 @@ Install UV
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
+Create the Milvus data directory (used by the Llama Stack server for vector storage)
+
+```bash
+mkdir -p ~/.llama/milvus_data
+```
+
 ---
 
 ## Additional Resources

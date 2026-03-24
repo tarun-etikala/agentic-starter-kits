@@ -20,7 +20,7 @@ class SimpleContext:
         return {}
 
 
-thread_id = "PLACEHOLDER_FOR_YOUR_THREAD_ID"
+thread_id = "e2b89156-1a45-4b2a-8176-5d60e8abe8e3"
 
 stream = True
 

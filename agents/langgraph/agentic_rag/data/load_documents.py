@@ -80,8 +80,8 @@ def load_and_index_documents(
     )
 
     vector_store_id = (getenv("VECTOR_STORE_ID") or "").strip().strip("\"'") or None
-    provider_id = "milvus"
-    embedding_dimension = 1024
+    provider_id = "pgvector"
+    embedding_dimension = 768
 
     if vector_store_id:
         # Use existing vector store
