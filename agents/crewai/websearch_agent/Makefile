@@ -3,7 +3,7 @@ CHART_DIR      := ../../../charts/agent
 VALUES_FILE    := values.yaml
 CONTAINER_CLI  := $(shell command -v podman 2>/dev/null || command -v docker 2>/dev/null)
 
-.PHONY: init run build push build-openshift deploy undeploy test dry-run help
+.PHONY: init run run-cli build push build-openshift deploy undeploy test dry-run help
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -13,11 +13,16 @@ init: ## Copy .env.example to .env for configuration
 
 run: ## Run agent locally with hot-reload
 	@set -a && source .env && set +a && \
-	  uv run uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+	  uv run uvicorn main:app --host 0.0.0.0 --port $${PORT:-8000} --reload
+
+run-cli: ## Run interactive CLI chat (no web server)
+	@set -a && source .env && set +a && \
+	  cd examples && uv run python execute_ai_service_locally.py
 
 build: ## Build container image locally (podman/docker)
 	@source .env && \
 	  [ -n "$${CONTAINER_IMAGE}" ] || { echo "ERROR: CONTAINER_IMAGE is not set in .env"; exit 1; } && \
+	  cp -r ../../../images ./images && trap 'rm -rf ./images' EXIT && \
 	  $(CONTAINER_CLI) build --platform linux/amd64 -t "$${CONTAINER_IMAGE}" -f Dockerfile .
 
 push: ## Push container image to registry
@@ -26,16 +31,22 @@ push: ## Push container image to registry
 	  $(CONTAINER_CLI) push "$${CONTAINER_IMAGE}"
 
 build-openshift: ## Build image in-cluster via OpenShift BuildConfig (no podman/docker needed)
-	@oc new-build --strategy=docker --binary --name=$(AGENT_NAME) --to=$(AGENT_NAME):latest 2>/dev/null || true
-	@oc start-build $(AGENT_NAME) --from-dir=. --follow
+	@cp -r ../../../images ./images && trap 'rm -rf ./images' EXIT && \
+	  oc new-build --strategy=docker --binary --name=$(AGENT_NAME) --to=$(AGENT_NAME):latest 2>/dev/null || true && \
+	  oc start-build $(AGENT_NAME) --from-dir=. --follow && \
+	  NS=$$(oc project -q) && \
+	  echo "" && \
+	  echo "Image built. To deploy, set in .env:" && \
+	  echo "  CONTAINER_IMAGE=image-registry.openshift-image-registry.svc:5000/$$NS/$(AGENT_NAME):latest"
 
 _check-env:
 	@set -a && source .env 2>/dev/null && set +a; \
-	  python3 -c "import yaml,os,sys; \
-	    data=yaml.safe_load(open('agent.yaml')); \
-	    required=data.get('env',{}).get('required',[]); \
-	    missing=[v for v in required if not os.environ.get(v)]; \
-	    sys.exit('ERROR: Missing required env vars: '+', '.join(missing)) if missing else None"
+	  missing=""; \
+	  for var in $$(sed -n '/^ *required:/,/^ *[a-z]/{ /^ *- /s/^ *- *//p; }' agent.yaml); do \
+	    eval val="\$$$$var"; \
+	    [ -n "$$val" ] || missing="$$missing $$var"; \
+	  done; \
+	  [ -z "$$missing" ] || { echo "ERROR: Missing required env vars:$$missing"; exit 1; }
 
 deploy: _check-env ## Deploy to OpenShift/K8s via Helm
 	@source .env && \
@@ -50,7 +61,9 @@ deploy: _check-env ## Deploy to OpenShift/K8s via Helm
 	    --set image.repository="$${IMAGE_REPO}" \
 	    --set image.tag="$${IMAGE_TAG}" \
 	    --set env.BASE_URL="$${BASE_URL}" \
-	    --set env.MODEL_ID="$${MODEL_ID}"
+	    --set env.MODEL_ID="$${MODEL_ID}" && \
+	  ROUTE=$$(oc get route $(AGENT_NAME) -o jsonpath='{.spec.host}' 2>/dev/null) && \
+	  if [ -n "$$ROUTE" ]; then echo "" && echo "Agent is available at: https://$$ROUTE"; fi
 
 dry-run: _check-env ## Render Helm templates without deploying
 	@source .env && \

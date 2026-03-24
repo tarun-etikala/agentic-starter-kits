@@ -466,6 +466,17 @@ async def health():
     }
 
 
+# ── Playground API aliases (so the same index.html works in both modes) ───────
+@app.get("/api/health", response_model=HealthResponse, include_in_schema=False)
+async def api_health():
+    return await health()
+
+
+@app.post("/api/chat", include_in_schema=False)
+async def api_chat(request: ChatCompletionRequest):
+    return await chat_completions(request)
+
+
 # ── Playground UI ────────────────────────────────────────────────────────────
 _BASE_DIR = Path(__file__).resolve().parent
 _PLAYGROUND_HTML = _BASE_DIR / "playground" / "templates" / "index.html"
@@ -498,5 +509,5 @@ async def serve_image(filename: str):
 if __name__ == "__main__":
     import uvicorn
 
-    port = int(getenv("PORT", 8080))
+    port = int(getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)

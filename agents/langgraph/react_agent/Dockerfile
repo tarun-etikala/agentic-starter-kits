@@ -33,5 +33,5 @@ EXPOSE 8080
 ENV PORT=8080
 ENV PYTHONPATH=/opt/app-root/src
 
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Run the application — reads PORT at runtime
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]

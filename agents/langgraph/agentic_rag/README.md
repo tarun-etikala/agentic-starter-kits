@@ -15,13 +15,21 @@ with your own data.
 
 ---
 
+## Prerequisites
+
+- [uv](https://docs.astral.sh/uv/) — Python package manager
+- [Podman](https://podman.io/) or [Docker](https://www.docker.com/) — for local container builds (Option A)
+- [oc](https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html) — for OpenShift deployment
+- [Helm](https://helm.sh/) — for deploying to Kubernetes/OpenShift
+
 ## Quick Start
 
 ```bash
 cd agents/langgraph/agentic_rag
 make init        # creates .env from .env.example
 # Edit .env with required vars (see below)
-make run         # starts on http://localhost:8080
+make run         # starts web playground UI on http://localhost:8000
+make run-cli     # interactive terminal chat (no web server)
 ```
 
 ## Configuration
@@ -37,7 +45,7 @@ VECTOR_STORE_ID=your-vector-store-id
 VECTOR_STORE_PATH=/path/to/milvus_data/milvus_lite.db
 ```
 
-See [Local Development](../../../docs/local-development.md) for Ollama + Llama Stack setup.
+See [Local Development](../../../docs/local-development.md) for Ollama + Llama Stack setup for local model serving.
 
 ### OpenShift / Remote API
 
@@ -104,9 +112,13 @@ make deploy           # deploys via Helm (includes volume mount for vector store
 
 # Option B: Build in-cluster on OpenShift (no Podman/Docker needed)
 make build-openshift  # builds image via OpenShift BuildConfig
+# Set CONTAINER_IMAGE in .env to the internal registry path printed after the build
 make deploy
 
-# Preview rendered manifests before deploying
+# Remove deployment from cluster
+make undeploy
+
+# (Optional)Preview rendered manifests before deploying
 make dry-run
 ```
 
@@ -114,13 +126,13 @@ See [OpenShift Deployment](../../../docs/openshift-deployment.md) for details.
 
 ### Testing on OpenShift
 
-Get the route URL:
+The route URL is printed after `make deploy`. You can also retrieve it manually:
 
 ```bash
 oc get route langgraph-agentic-rag -o jsonpath='{.spec.host}'
 ```
 
-Replace `http://localhost:8080` with `https://<YOUR_ROUTE_URL>` in the API examples below.
+Replace `http://localhost:8000` with `https://<YOUR_ROUTE_URL>` in the API examples below.
 
 ## API Endpoints
 
@@ -129,7 +141,7 @@ Replace `http://localhost:8080` with `https://<YOUR_ROUTE_URL>` in the API examp
 Non-streaming:
 
 ```bash
-curl -X POST http://localhost:8080/chat/completions \
+curl -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "What is LangChain?"}], "stream": false}'
 ```
@@ -137,7 +149,7 @@ curl -X POST http://localhost:8080/chat/completions \
 Streaming:
 
 ```bash
-curl -sN -X POST http://localhost:8080/chat/completions \
+curl -sN -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "What is LangChain?"}], "stream": true}'
 ```
@@ -145,7 +157,7 @@ curl -sN -X POST http://localhost:8080/chat/completions \
 Pretty Printed Stream:
 
 ```bash
-curl -sN -X POST http://localhost:8080/chat/completions \
+curl -sN -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "What is LangChain?"}], "stream": true}' |
    jq -R -r -j --stream 'scan("^data:(.*)")[] | fromjson.choices[0].delta.content // empty'
@@ -154,7 +166,7 @@ curl -sN -X POST http://localhost:8080/chat/completions \
 ### GET /health
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:8000/health
 ```
 
 ## Playground UI
@@ -163,32 +175,35 @@ A browser-based chat interface is served directly by the agent at the root URL �
 
 ### Running the Playground
 
-Start the agent and open the root URL in your browser:
-
 ```bash
-uvicorn main:app --port 8000
+make run
 ```
 
-Open [http://localhost:8000](http://localhost:8000) in your browser.
+Open [http://localhost:8000](http://localhost:8000) in your browser. A green dot in the header means the agent is connected and ready.
 
-A green dot in the header means the agent is connected and ready. Type a message and press **Enter** to send.
+When deployed to OpenShift, the playground is available at the route URL printed by `make deploy`.
 
-When deployed to OpenShift, the playground is available at the route URL.
+### Interactive CLI Chat
+
+For terminal-based testing without a browser:
+
+```bash
+make run-cli
+```
+
+This launches an interactive prompt where you can pick predefined questions or type your own. Tool calls and results are displayed inline with colored output.
 
 ### Standalone Flask Playground (alternative)
 
-You can also run the playground as a separate Flask app if needed:
-
-```bash
-uv pip install flask
-```
+You can also run the playground as a separate Flask app that proxies to the agent:
 
 ```bash
 # Terminal 1: Start the agent
-uvicorn main:app --port 8000
+make run
 
-# Terminal 2: Start the playground
-flask --app playground/app run --port 5001
+# Terminal 2: Open in the same directory as Terminal 1
+uv pip install flask
+uv run flask --app playground.app run --port 5050
 ```
 
 | Variable    | Default                  | Description                     |
@@ -198,7 +213,7 @@ flask --app playground/app run --port 5001
 If the agent runs on a different host or port:
 
 ```bash
-AGENT_URL=https://your-agent-url flask --app playground/app run --port 5001
+AGENT_URL=https://your-agent-url uv run flask --app playground.app run --port 5050
 ```
 
 ## Tests

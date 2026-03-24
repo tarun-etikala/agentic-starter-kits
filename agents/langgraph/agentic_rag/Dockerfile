@@ -35,5 +35,5 @@ ENV PORT=8080
 ENV PYTHONPATH=/opt/app-root/src
 ENV VECTOR_STORE_PATH=/opt/app-root/src/data/vector_store
 
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Run the application — reads PORT at runtime
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
