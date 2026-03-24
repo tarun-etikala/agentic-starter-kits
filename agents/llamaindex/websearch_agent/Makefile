@@ -51,8 +51,7 @@ _check-env:
 deploy: _check-env ## Deploy to OpenShift/K8s via Helm
 	@source .env && \
 	  [ -n "$${CONTAINER_IMAGE}" ] || { echo "ERROR: CONTAINER_IMAGE is not set in .env"; exit 1; } && \
-	  IMAGE_REPO="$${CONTAINER_IMAGE%:*}" && \
-	  IMAGE_TAG="$${CONTAINER_IMAGE##*:}" && \
+	  case "$${CONTAINER_IMAGE}" in *:*) IMAGE_REPO="$${CONTAINER_IMAGE%:*}"; IMAGE_TAG="$${CONTAINER_IMAGE##*:}";; *) IMAGE_REPO="$${CONTAINER_IMAGE}"; IMAGE_TAG="latest";; esac && \
 	  trap 'rm -f .helm-secrets.yaml' EXIT && \
 	  printf 'secrets:\n  apiKey: "%s"\n' "$${API_KEY}" > .helm-secrets.yaml && \
 	  helm upgrade --install $(AGENT_NAME) $(CHART_DIR) \
@@ -67,8 +66,7 @@ deploy: _check-env ## Deploy to OpenShift/K8s via Helm
 
 dry-run: _check-env ## Render Helm templates without deploying
 	@source .env && \
-	  IMAGE_REPO="$${CONTAINER_IMAGE%:*}" && \
-	  IMAGE_TAG="$${CONTAINER_IMAGE##*:}" && \
+	  case "$${CONTAINER_IMAGE}" in *:*) IMAGE_REPO="$${CONTAINER_IMAGE%:*}"; IMAGE_TAG="$${CONTAINER_IMAGE##*:}";; *) IMAGE_REPO="$${CONTAINER_IMAGE}"; IMAGE_TAG="latest";; esac && \
 	  helm template $(AGENT_NAME) $(CHART_DIR) \
 	    -f $(VALUES_FILE) \
 	    --set secrets.apiKey="REDACTED" \
