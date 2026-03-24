@@ -59,6 +59,9 @@ agentic-starter-kits/
 │   │   └── openai_responses_agent/  # OpenAI Responses API (no framework)
 │   └── autogen/
 │       └── mcp_agent/               # AutoGen + MCP (SSE)
+├── charts/
+│   └── agent/                       # Shared Helm chart for all agents
+├── docs/                            # Guides: deployment, local dev, contributing
 └── README.md
 ```
 
