@@ -73,6 +73,19 @@ MLFLOW_HTTP_REQUEST_TIMEOUT=2
 MLFLOW_HTTP_REQUEST_MAX_RETRIES=0
 ```
 
+##### Configuring the LLM provider for tracing
+
+CrewAI can use different LLM providers. Set `LLM_PROVIDER` to match your provider so MLflow uses the correct autolog integration:
+
+| `LLM_PROVIDER` value | MLflow autolog enabled        | When to use                      |
+|-----------------------|-------------------------------|----------------------------------|
+| `litellm` (default)  | `mlflow.litellm.autolog()`    | OpenAI-compatible endpoints      |
+| `openai`             | `mlflow.openai.autolog()`     | Direct OpenAI API                |
+| `anthropic`          | `mlflow.anthropic.autolog()`  | Anthropic API                    |
+| `gemini`             | `mlflow.gemini.autolog()`     | Google Gemini API                |
+| `azure`              | `mlflow.openai.autolog()`     | Azure OpenAI                     |
+| `bedrock`            | `mlflow.bedrock.autolog()`    | AWS Bedrock                      |
+
 ### OpenShift / Remote API
 
 ```
