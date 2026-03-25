@@ -21,8 +21,9 @@ with your own data.
 - [Podman](https://podman.io/) or [Docker](https://www.docker.com/) — for local container builds (Option A)
 - [oc](https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html) — for OpenShift deployment
 - [Helm](https://helm.sh/) — for deploying to Kubernetes/OpenShift
+- [GNU Make](https://www.gnu.org/software/make/) and a bash-compatible shell — on Windows, use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) (recommended) or [Git Bash](https://git-scm.com/downloads)
 
-## Quick Start
+## Quick Start (Local)
 
 ```bash
 cd agents/langgraph/agentic_rag
@@ -108,23 +109,24 @@ This will:
 # Option A: Build locally with Podman (or Docker) and push to a registry
 make build            # builds container image locally
 make push             # pushes image to registry
+make dry-run          # (optional) preview rendered Helm manifests
 make deploy           # deploys via Helm (includes volume mount for vector store)
 
 # Option B: Build in-cluster on OpenShift (no Podman/Docker needed)
 make build-openshift  # builds image via OpenShift BuildConfig
 # Set CONTAINER_IMAGE in .env to the internal registry path printed after the build
+make dry-run          # (optional) preview rendered Helm manifests
 make deploy
 
 # Remove deployment from cluster
 make undeploy
-
-# (Optional)Preview rendered manifests before deploying
-make dry-run
 ```
 
 See [OpenShift Deployment](../../../docs/openshift-deployment.md) for details.
 
 ### Testing on OpenShift
+
+After deploying, the application may take about a minute to become available while the pod starts up.
 
 The route URL is printed after `make deploy`. You can also retrieve it manually:
 
@@ -172,8 +174,6 @@ curl http://localhost:8000/health
 ## Playground UI
 
 A browser-based chat interface is served directly by the agent at the root URL — no separate process needed.
-
-### Running the Playground
 
 ```bash
 make run

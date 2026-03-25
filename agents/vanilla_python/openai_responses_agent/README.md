@@ -21,8 +21,9 @@ OpenAI or any compatible API.
 - [Podman](https://podman.io/) or [Docker](https://www.docker.com/) — for local container builds (Option A)
 - [oc](https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html) — for OpenShift deployment
 - [Helm](https://helm.sh/) — for deploying to Kubernetes/OpenShift
+- [GNU Make](https://www.gnu.org/software/make/) and a bash-compatible shell — on Windows, use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) (recommended) or [Git Bash](https://git-scm.com/downloads)
 
-## Quick Start
+## Quick Start (Local)
 
 ```bash
 cd agents/vanilla_python/openai_responses_agent
@@ -52,6 +53,24 @@ MODEL_ID=gpt-4o-mini
 
 See [Local Development](../../../docs/local-development.md) for Ollama + Llama Stack setup for local model serving.
 
+#### Tracing (optional)
+
+To enable MLflow tracing, install the optional dependency and start the MLflow server:
+
+```bash
+uv pip install "mlflow>=3.10.0"   # installs mlflow
+mlflow server --port 5000
+```
+
+Then add the following to your `.env`:
+
+```ini
+MLFLOW_TRACKING_URI="http://localhost:5000"
+MLFLOW_EXPERIMENT_NAME="openai-responses-agent"
+MLFLOW_HTTP_REQUEST_TIMEOUT=2
+MLFLOW_HTTP_REQUEST_MAX_RETRIES=0
+```
+
 ### OpenShift / Remote API
 
 ```
@@ -77,29 +96,50 @@ CONTAINER_IMAGE=quay.io/your-username/openai-responses-agent:latest
     - Docker Hub: `docker.io/your-username/openai-responses-agent:latest`
     - GHCR: `ghcr.io/your-org/openai-responses-agent:latest`
 
+#### Tracing
+
+To enable tracing and logging with MLflow on your OpenShift cluster, add the following environment variables to your `.env` file:
+
+```ini
+MLFLOW_TRACKING_URI="https://your-mlflow-server-url"
+MLFLOW_EXPERIMENT_NAME="openai-responses-agent"
+MLFLOW_TRACKING_TOKEN="your-tracking-token"
+MLFLOW_WORKSPACE="default"
+```
+
+**Notes:**
+
+- `MLFLOW_TRACKING_URI` - URL of your MLflow server
+- `MLFLOW_EXPERIMENT_NAME` - name of the experiment
+- `MLFLOW_TRACKING_TOKEN` - authentication token for the MLflow server (contact your cluster administrator)
+- `MLFLOW_WORKSPACE` - workspace name (default: `default`)
+
+- You can control how long the application waits for the MLflow server by setting `MLFLOW_HEALTH_CHECK_TIMEOUT` (in seconds, default: `5`).
+
 ## Deploying to OpenShift
 
 ```bash
 # Option A: Build locally with Podman (or Docker) and push to a registry
 make build            # builds container image locally
 make push             # pushes image to registry
+make dry-run          # (optional) preview rendered Helm manifests
 make deploy           # deploys via Helm
 
 # Option B: Build in-cluster on OpenShift (no Podman/Docker needed)
 make build-openshift  # builds image via OpenShift BuildConfig
 # Set CONTAINER_IMAGE in .env to the internal registry path printed after the build
+make dry-run          # (optional) preview rendered Helm manifests
 make deploy
 
 # Remove deployment from cluster
 make undeploy
-
-# (Optional)Preview rendered manifests before deploying
-make dry-run
 ```
 
 See [OpenShift Deployment](../../../docs/openshift-deployment.md) for details.
 
 ### Testing on OpenShift
+
+After deploying, the application may take about a minute to become available while the pod starts up.
 
 The route URL is printed after `make deploy`. You can also retrieve it manually:
 
@@ -147,8 +187,6 @@ curl http://localhost:8000/health
 ## Playground UI
 
 A browser-based chat interface is served directly by the agent at the root URL — no separate process needed.
-
-### Running the Playground
 
 ```bash
 make run
