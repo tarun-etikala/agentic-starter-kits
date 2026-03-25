@@ -15,7 +15,8 @@ This guide covers deploying any agent from this repository to an OpenShift clust
 ### 1. Login to OpenShift and Container Registry
 
 ```bash
-oc login -u <username> -p <password> https://<cluster-api-url>
+# Token-based login (recommended — avoids credentials in shell history)
+oc login --token=<token> --server=https://<cluster-api-url>
 ```
 
 If using Option A (local build + push), also log in to your container registry:
@@ -47,8 +48,8 @@ make init        # creates .env from .env.example
 Edit `.env`:
 
 ```
-API_KEY=dummy
-BASE_URL=http://localhost:8321/v1
+API_KEY=your-api-key-here
+BASE_URL=https://<model-endpoint>/v1
 MODEL_ID=llama3.2:3b
 ```
 

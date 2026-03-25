@@ -45,9 +45,9 @@ Every agent must have:
 
 All agents must expose these endpoints:
 
-- `POST /chat/completions` — accepts `{"messages": [...], "stream": false}`, returns response
-- `POST /chat/completions` — accepts `{"messages": [...], "stream": true}`, returns SSE stream
-- `GET /health` — returns `{"status": "healthy"}`
+- `POST /chat/completions` — accepts `{"messages": [...], "stream": false}`, returns JSON response
+- `POST /chat/completions` — accepts `{"messages": [...], "stream": true}`, returns SSE stream with `Content-Type: text/event-stream` and no-cache / no-buffering headers
+- `GET /health` — returns `{"status": "healthy", "agent_initialized": true}`
 
 ## 5. Update agent.yaml
 

@@ -44,7 +44,16 @@ MODEL_ID=ollama/llama3.2:3b
 
 See [Local Development](../../../docs/local-development.md) for Ollama + Llama Stack setup for local model serving.
 
-#### Tracing
+#### Tracing (optional)
+
+To enable MLflow tracing, install the optional dependency and start the MLflow server:
+
+```bash
+uv pip install "mlflow>=3.10.0"   # installs mlflow
+mlflow server --port 5000
+```
+
+Then add the following to your `.env`:
 
 ```ini
 MLFLOW_TRACKING_URI="http://localhost:5000"
