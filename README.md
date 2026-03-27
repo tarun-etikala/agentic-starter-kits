@@ -27,7 +27,7 @@ Agents are organized by framework. Pick one and follow its README:
 
 ## Deployment Options
 
-Agents in this repository can support two deployment modes:
+Agents in this repository support two deployment modes:
 
 ### 🖥️ Local Development
 
@@ -36,12 +36,49 @@ Agents in this repository can support two deployment modes:
 - Ideal for development, testing, and experimentation
 - No cloud infrastructure required
 
+```bash
+git clone https://github.com/red-hat-data-services/agentic-starter-kits
+cd agentic-starter-kits
+
+# Install uv (Python package manager)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Pick an agent and go
+cd agents/langgraph/react_agent
+make init        # creates .env from .env.example
+# Edit .env with your API_KEY, BASE_URL, MODEL_ID
+make run         # starts on http://localhost:8080
+```
+
+See [Local Development Guide](./docs/local-development.md) for Ollama + Llama Stack setup.
+
 ### ☁️ Production Deployment
 
 - Deploy agents to Red Hat OpenShift Cluster
 - Containerized deployment with Kubernetes
 - Production-grade scaling and monitoring
 - CI/CD ready
+
+```bash
+cd agents/langgraph/react_agent
+
+# Option A: Build locally with Podman (or Docker) and push to a registry
+make build            # builds container image locally
+make push             # pushes image to registry
+make deploy           # deploys via Helm
+
+# Option B: Build in-cluster on OpenShift (no Podman/Docker needed)
+make build-openshift  # builds image via OpenShift BuildConfig
+make deploy           # deploys via Helm
+```
+
+Preview rendered Helm manifests before deploying:
+
+```bash
+make dry-run
+```
+
+See [OpenShift Deployment Guide](./docs/openshift-deployment.md) for details.
 
 ## Repository Structure
 
@@ -68,41 +105,21 @@ agentic-starter-kits/
 └── README.md
 ```
 
----
+Each Helm-based agent directory contains:
 
-## How to Use This Repository
-
-1. **Start Here**: Read this README to understand the overall structure and install core dependencies
-2. **Choose an Agent**: Select an agent from the `agents/` directory based on your use case
-3. **Follow Agent README**: Navigate to the agent's directory and follow its specific README for:
-    - Agent-specific dependencies installation
-    - Configuration and setup
-    - Local development or OpenShift deployment
-    - Usage examples and API endpoints
-
-### Pre-requisitions to run that repo
-
-Run this script to set up repo stuff with a use of [UV](https://docs.astral.sh/uv/) and python 3.12
-
-Download repo
-
-```bash
-git clone https://github.com/red-hat-data-services/agentic-starter-kits
 ```
-
-Get into root dir
-
-```bash
-cd agentic-starter-kits
+agent-name/
+├── agent.yaml         # Agent metadata and required env vars
+├── values.yaml        # Helm values override for this agent
+├── .env.example       # Environment variable template
+├── Makefile           # make init, run, build, build-openshift, deploy, dry-run, test
+├── Dockerfile         # Container build
+├── pyproject.toml     # Python dependencies
+├── main.py            # FastAPI app (/chat/completions, /health)
+├── src/               # Agent source code
+├── tests/             # Tests
+└── examples/          # Example scripts
 ```
-
-Install UV
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
----
 
 ## Documentation
 
@@ -112,17 +129,16 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ## Additional Resources
 
-- **Llama Stack Documentation**: https://llama-stack.readthedocs.io/
-- **Ollama Documentation**: https://docs.ollama.com/
-- **OpenShift Documentation**: https://docs.openshift.com/
+- **Llama Stack**: https://llama-stack.readthedocs.io/
+- **Ollama**: https://docs.ollama.com/
+- **Red Hat OpenShift**: https://docs.openshift.com/
+- **Helm**: https://helm.sh/docs/
 - **Kubernetes**: https://kubernetes.io/docs/
 
 ## Contributing
 
-Contributions are welcome! Please see individual agent READMEs for specific guidelines.
+Contributions are welcome! See [Adding a New Agent](./docs/adding-a-new-agent.md) and [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 
-MIT License
-
-Copyright (c) 2026
+[Apache License 2.0](./LICENSE)

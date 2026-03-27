@@ -14,12 +14,11 @@ dependencies = [
     "langgraph-prebuilt>=1.0.8",
     "langgraph-checkpoint>=3.0.0",
     "llama-stack>=0.5.0",
-    "pymilvus==2.5.9",
     "openai>=2.24.0",
-    "chardet==7.2.0",
-    "pypdf==6.9.1",
-    "pymilvus==2.5.9", # <-- Downgraded to the proven safe version
-    "milvus-lite>=2.4.0", # <-- Matches the safe PyMilvus
+    "chardet>=7.1.0",
+    "pypdf>=6.9.0",
+    "pymilvus==2.5.9",
+    "milvus-lite>=2.4.0",
     "python-dotenv>=1.2.2",
     "setuptools>=80.9.0,<82.0.0",
     "flask>=3.1.0",

@@ -2,7 +2,7 @@
 
 ![LangGraph Logo](/images/langgraph_logo.svg)
 
-# RAG Agent
+# Agentic RAG Agent
 
 </div>
 
@@ -15,277 +15,195 @@ with your own data.
 
 ---
 
-### Preconditions:
+## Prerequisites
 
-- You need to change .env.template file to .env
-- Decide what way you want to go `local` or `RH OpenShift Cluster` and fill needed values
-- Use `./init.sh` that will add those values from .env to environment variables
-- **RAG-specific**: You need to load documents into the vector store before using the agent (see below)
+- [uv](https://docs.astral.sh/uv/) — Python package manager
+- [Podman](https://podman.io/) or [Docker](https://www.docker.com/) — for local container builds (Option A)
+- [oc](https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html) — for OpenShift deployment
+- [Helm](https://helm.sh/) — for deploying to Kubernetes/OpenShift
+- [GNU Make](https://www.gnu.org/software/make/) and a bash-compatible shell — on Windows, use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) (recommended) or [Git Bash](https://git-scm.com/downloads)
 
-Copy .env file
-
-Go to agent dir
+## Quick Start (Local)
 
 ```bash
 cd agents/langgraph/agentic_rag
+make init        # creates .env from .env.example
+# Edit .env with required vars (see below)
+make run         # starts web playground UI on http://localhost:8000
+make run-cli     # interactive terminal chat (no web server)
 ```
 
-Change the name of .env file
+## Configuration
 
-```bash
-mv template.env .env
-```
-
-#### Local
-
-Edit the `.env` file with your local configuration:
+### Local
 
 ```
-# LLM
-BASE_URL=http://localhost:8321
-MODEL_ID=ollama/llama3.2:3b
 API_KEY=not-needed
-CONTAINER_IMAGE=not-needed
-
-# RAG-specific Configuration
+BASE_URL=http://localhost:8321/v1
+MODEL_ID=ollama/llama3.2:3b
 EMBEDDING_MODEL=ollama/embeddinggemma:latest
-
-VECTOR_STORE_ID=""
-VECTOR_STORE_PATH=/absolute/path/to/milvus_data/milvus_lite.db
-DOCS_TO_LOAD=./data/sample_knowledge.txt
-PORT=8000
+VECTOR_STORE_ID=your-vector-store-id
+VECTOR_STORE_PATH=/path/to/milvus_data/milvus_lite.db
 ```
 
-**Notes:**
+See [Local Development](../../../docs/local-development.md) for Ollama + Llama Stack setup for local model serving.
 
-- `VECTOR_STORE_PATH` - Absolute path where Milvus Lite database will be stored
-- `EMBEDDING_MODEL` - Model used for generating document embeddings (requires `ollama pull embeddinggemma:latest`)
-- `DOCS_TO_LOAD` - Path to text file containing documents to load into vector store
-- `PORT` - FastAPI server port (default: 8000)
-
-#### OpenShift Cluster
-
-Edit the `.env` file and fill in all required values:
+### OpenShift / Remote API
 
 ```
 API_KEY=your-api-key-here
-BASE_URL=https://your-llama-stack-distribution.com/v1
+BASE_URL=https://your-model-endpoint.com/v1
 MODEL_ID=llama-3.1-8b-instruct
-CONTAINER_IMAGE=quay.io/your-username/langgraph-agentic-rag:latest
-
-# RAG-specific Configuration
-VECTOR_STORE_PATH=/data/milvus_lite.db
 EMBEDDING_MODEL=your-embedding-model
-DOCS_TO_LOAD=./data/sample_knowledge.txt
-PORT=8000
+VECTOR_STORE_ID=your-vector-store-id
+CONTAINER_IMAGE=quay.io/your-username/langgraph-agentic-rag:latest
 ```
 
 **Notes:**
 
-- `API_KEY` - contact your cluster administrator
+- `API_KEY` - your API key or contact your cluster administrator
 - `BASE_URL` - should end with `/v1`
-- `MODEL_ID` - contact your cluster administrator
-- `CONTAINER_IMAGE` - full image path where the agent container will be pushed and pulled from.
-  The image is built locally, pushed to this registry, and then deployed to OpenShift.
+- `MODEL_ID` - model identifier available on your endpoint
+- `EMBEDDING_MODEL` - model used for generating document embeddings (requires `ollama pull embeddinggemma:latest` for local usage)
+- `VECTOR_STORE_PATH` - absolute path where the Milvus Lite database will be stored
+- `DOCS_TO_LOAD` - path to text file containing documents to load into the vector store (default: `./data/sample_knowledge.txt`)
+- `CONTAINER_IMAGE` – full image path where the agent container will be pushed and pulled from. The image is built
+  locally, pushed to this registry, and then deployed to OpenShift.
 
   Format: `<registry>/<namespace>/<image-name>:<tag>`
 
   Examples:
+
     - Quay.io: `quay.io/your-username/langgraph-agentic-rag:latest`
     - Docker Hub: `docker.io/your-username/langgraph-agentic-rag:latest`
     - GHCR: `ghcr.io/your-org/langgraph-agentic-rag:latest`
 
-Create and activate a virtual environment (Python 3.12) in this directory using [uv](https://docs.astral.sh/uv/):
-
-```bash
-uv venv --python 3.12
-source .venv/bin/activate
-```
-
-(On Windows: `.venv\Scripts\activate`)
-
-Make scripts executable
-
-```bash
-chmod +x init.sh
-```
-
-Add values from .env to environment variables
-
-```bash
-source ./init.sh
-```
-
----
-
-## Local usage (Ollama + LlamaStack Server)
-
-Create package with agent and install it to venv
-
-```bash
-uv pip install -e .
-```
-
-```bash
-uv pip install ollama
-```
-
-```bash
-#brew install ollama
-# or
-curl -fsSL https://ollama.com/install.sh | sh
-```
-
-Pull Required Models (including embedding model for RAG)
-
-```bash
-ollama pull llama3.2:3b
-ollama pull embeddinggemma:latest
-```
-
-Start Ollama Service
-
-```bash
-ollama serve
-```
-
-> **Keep this terminal open!**\
-> Ollama needs to keep running.
-
-Start LlamaStack Server
-
-```bash
-llama stack run ../../../run_llama_server.yaml
-```
-
-> **Keep this terminal open** - the server needs to keep running.\
-> You should see output indicating the server started on `http://localhost:8321`.
-
-### Load Documents into Vector Store
+## Load Documents into Vector Store
 
 **IMPORTANT**:
-Before running the agent, you must have your Vector Store ID pasted into `VECTOR_STORE_ID=""`
-If You do not have `VECTOR_STORE_ID` you can create one with that `load_document.py` script.
+Before running the agent, you must have your Vector Store ID pasted into `VECTOR_STORE_ID=""`.
+If you do not have a `VECTOR_STORE_ID`, you can create one with the `load_documents.py` script.
+
+For local usage, first pull the embedding model:
+
+```bash
+ollama pull embeddinggemma:latest
+```
 
 Run the document loader:
 
 ```bash
-python data/load_documents.py
+uv run python data/load_documents.py
 ```
 
 This will:
 
-- Read documents from the file specified in `DOCS_TO_LOAD` environment variable
+- Read documents from `data/sample_knowledge.txt` (or the path in `DOCS_TO_LOAD`)
 - Split documents into chunks (512 characters with 128 overlap by default)
 - Generate embeddings using the model specified in `EMBEDDING_MODEL`
-- Store chunks in the Milvus Lite vector database at `VECTOR_STORE_PATH`
+- Store chunks in the Milvus vector database at `VECTOR_STORE_PATH`
 
-### Run the example:
-
-```bash
-uv run examples/execute_ai_service_locally.py
-```
-
-# Deployment on RedHat OpenShift Cluster
-
-Login to OC
+## Deploying to OpenShift
 
 ```bash
-oc login -u "login" -p "password" https://super-link-to-cluster:111
+# Option A: Build locally with Podman (or Docker) and push to a registry
+make build            # builds container image locally
+make push             # pushes image to registry
+make dry-run          # (optional) preview rendered Helm manifests
+make deploy           # deploys via Helm (includes volume mount for vector store)
+
+# Option B: Build in-cluster on OpenShift (no Podman/Docker needed)
+make build-openshift  # builds image via OpenShift BuildConfig
+# Set CONTAINER_IMAGE in .env to the internal registry path printed after the build
+make dry-run          # (optional) preview rendered Helm manifests
+make deploy
+
+# Remove deployment from cluster
+make undeploy
 ```
 
-Login ex. Docker
+See [OpenShift Deployment](../../../docs/openshift-deployment.md) for details.
 
-```bash
-docker login -u='login' -p='password' quay.io
-```
+### Testing on OpenShift
 
-Make deploy file executable
+After deploying, the application may take about a minute to become available while the pod starts up.
 
-```bash
-chmod +x deploy.sh
-```
-
-Build image and deploy Agent
-
-```bash
-./deploy.sh
-```
-
-This will:
-
-- Create Kubernetes secret for API key
-- Build and push the Docker image
-- Deploy the agent to OpenShift
-- Create Service and Route
-
-COPY the route URL and PASTE into the CURL below
+The route URL is printed after `make deploy`. You can also retrieve it manually:
 
 ```bash
 oc get route langgraph-agentic-rag -o jsonpath='{.spec.host}'
 ```
 
-Send a test request:
+Replace `http://localhost:8000` with `https://<YOUR_ROUTE_URL>` in the API examples below.
 
-Non-streaming
+## API Endpoints
+
+### POST /chat/completions
+
+Non-streaming:
 
 ```bash
-curl -X POST https://<YOUR_ROUTE_URL>/chat \
+curl -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "What is LangChain?"}], "stream": false}'
 ```
 
-Streaming
+Streaming:
 
 ```bash
-curl -X POST https://<YOUR_ROUTE_URL>/stream \
+curl -sN -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "What is LangChain?"}], "stream": true}'
 ```
 
-Pretty Printed Stream
+Pretty Printed Stream:
 
 ```bash
-curl -X POST https://<YOUR_ROUTE_URL>/stream \
+curl -sN -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "What is LangChain?"}], "stream": true}' |
    jq -R -r -j --stream 'scan("^data:(.*)")[] | fromjson.choices[0].delta.content // empty'
 ```
 
----
+### GET /health
+
+```bash
+curl http://localhost:8000/health
+```
 
 ## Playground UI
 
 A browser-based chat interface is served directly by the agent at the root URL — no separate process needed.
 
-### Running the Playground
-
-Start the agent and open the root URL in your browser:
-
 ```bash
-uvicorn main:app --port 8000
+make run
 ```
 
-Open [http://localhost:8000](http://localhost:8000) in your browser.
+Open [http://localhost:8000](http://localhost:8000) in your browser. A green dot in the header means the agent is connected and ready.
 
-A green dot in the header means the agent is connected and ready. Type a message and press **Enter** to send.
+When deployed to OpenShift, the playground is available at the route URL printed by `make deploy`.
 
-When deployed to OpenShift, the playground is available at the route URL.
+### Interactive CLI Chat
+
+For terminal-based testing without a browser:
+
+```bash
+make run-cli
+```
+
+This launches an interactive prompt where you can pick predefined questions or type your own. Tool calls and results are displayed inline with colored output.
 
 ### Standalone Flask Playground (alternative)
 
-You can also run the playground as a separate Flask app if needed:
-
-```bash
-uv pip install flask
-```
+You can also run the playground as a separate Flask app that proxies to the agent:
 
 ```bash
 # Terminal 1: Start the agent
-uvicorn main:app --port 8000
+make run
 
-# Terminal 2: Start the playground
-flask --app playground/app run --port 5001
+# Terminal 2: Open in the same directory as Terminal 1
+uv pip install flask
+uv run flask --app playground.app run --port 5050
 ```
 
 | Variable    | Default                  | Description                     |
@@ -295,14 +213,17 @@ flask --app playground/app run --port 5001
 If the agent runs on a different host or port:
 
 ```bash
-AGENT_URL=https://your-agent-url flask --app playground/app run --port 5001
+AGENT_URL=https://your-agent-url uv run flask --app playground.app run --port 5050
 ```
 
----
+## Tests
 
-### Additional Resources
+```bash
+make test
+```
 
-- https://langchain-ai.github.io/langgraph/
-- https://llama-stack.readthedocs.io/
-- https://ollama.com/docs
-- https://milvus.io/docs
+## Resources
+
+- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
+- [Milvus Documentation](https://milvus.io/docs)
+- [Llama Stack Documentation](https://llama-stack.readthedocs.io/)
