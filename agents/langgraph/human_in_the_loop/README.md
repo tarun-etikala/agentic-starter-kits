@@ -382,6 +382,52 @@ curl -X POST https://<YOUR_ROUTE_URL>/chat/completions \
 
 ---
 
+## Playground UI
+
+A browser-based chat interface with built-in Human-in-the-Loop approval support. When the agent pauses for approval, an
+**Approve / Reject** banner appears directly in the chat.
+
+### Running the Playground
+
+Start the agent and the playground in two terminals:
+
+Agent:
+
+```bash
+cd agents/langgraph/human_in_the_loop
+source .venv/bin/activate
+source ./init.sh
+uvicorn main:app --port 8000
+```
+
+UI App:
+
+```bash
+cd agents/langgraph/human_in_the_loop
+source .venv/bin/activate
+source ./init.sh
+flask --app playground/app run --port 5001
+```
+
+Open [http://localhost:5001](http://localhost:5001) in your browser.
+
+A green dot in the header means the agent is connected and ready. Type a message and press **Enter** to send.
+
+When the agent wants to call a sensitive tool (e.g. `create_file`), an approval banner will appear with **Approve** and
+**Reject** buttons. Click one to resume the agent.
+
+| Variable    | Default                 | Description                  |
+|-------------|-------------------------|------------------------------|
+| `AGENT_URL` | `http://localhost:8000` | URL of the running agent API |
+
+If the agent runs on a different host or port:
+
+```bash
+AGENT_URL=https://your-agent-url flask --app playground/app run --port 5001
+```
+
+---
+
 ## Agent-Specific Documentation
 
 ### Architecture
