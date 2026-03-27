@@ -73,11 +73,14 @@ MLFLOW_HTTP_REQUEST_MAX_RETRIES=0
 Then install the tracing dependency and start the MLflow server:
 
 ```bash
+# Create and activate a virtual environment (if not already created)
+uv venv
+
 # Install mlflow as an optional dependency
 uv pip install -e ".[tracing]"
 
 # Start the MLflow server in a separate terminal
-mlflow server --port 5000
+uv run mlflow server --port 5000
 ```
 
 #### Tracing with an OpenShift MLflow server
