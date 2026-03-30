@@ -17,9 +17,12 @@ connector to route inference through a LlamaStack server's OpenAI-compatible API
 
 - [uv](https://docs.astral.sh/uv/) — Python package manager
 - [Podman](https://podman.io/) or [Docker](https://www.docker.com/) — for local container builds (Option A)
-- [oc](https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html) — for OpenShift deployment
+- [oc](https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html) — for
+  OpenShift deployment
 - [Helm](https://helm.sh/) — for deploying to Kubernetes/OpenShift
-- [GNU Make](https://www.gnu.org/software/make/) and a bash-compatible shell — on Windows, use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) (recommended) or [Git Bash](https://git-scm.com/downloads)
+- [GNU Make](https://www.gnu.org/software/make/) and a bash-compatible shell — on Windows,
+  use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) (recommended)
+  or [Git Bash](https://git-scm.com/downloads)
 
 ## Deploying Locally
 
@@ -35,9 +38,9 @@ make init        # creates .env from .env.example
 #### Pointing to a locally hosted model
 
 ```ini
-API_KEY=not-needed
-BASE_URL=http://localhost:8321/v1
-MODEL_ID=ollama/llama3.2:3b
+API_KEY = not-needed
+BASE_URL = http://localhost:8321/v1
+MODEL_ID = ollama/llama3.2:3b
 ```
 
 See [Local Development](../../../docs/local-development.md) for Ollama + Llama Stack setup for local model serving.
@@ -45,9 +48,9 @@ See [Local Development](../../../docs/local-development.md) for Ollama + Llama S
 #### Pointing to a remotely hosted model
 
 ```ini
-API_KEY=your-api-key-here
-BASE_URL=https://your-model-endpoint.com/v1
-MODEL_ID=llama-3.1-8b-instruct
+API_KEY = your-api-key-here
+BASE_URL = https://your-model-endpoint.com/v1
+MODEL_ID = llama-3.1-8b-instruct
 ```
 
 **Notes:**
@@ -61,20 +64,25 @@ MODEL_ID=llama-3.1-8b-instruct
 #### Web Playground (`make run`)
 
 ```bash
-make run
+# Kill any existing process on port 8000 to avoid conflicts
+lsof -ti:8000 | xargs kill -9 2>/dev/null; make run
 ```
 
-Open [http://localhost:8000](http://localhost:8000) in your browser. A green dot in the header means the agent is connected and ready.
+Open [http://localhost:8000](http://localhost:8000) in your browser. A green dot in the header means the agent is
+connected and ready.
 
 #### Interactive CLI (`make run-cli`)
 
 For terminal-based testing without a browser:
 
 ```bash
-make run-cli
+cd agents/google/adk
+# Kill any existing process on port 8000 to avoid conflicts
+lsof -ti:8000 | xargs kill -9 2>/dev/null; make run-cli
 ```
 
-This launches an interactive prompt where you can pick predefined questions or type your own. Tool calls and results are displayed inline with colored output.
+This launches an interactive prompt where you can pick predefined questions or type your own. Tool calls and results are
+displayed inline with colored output.
 
 #### Standalone Flask Playground (alternative)
 
@@ -82,15 +90,23 @@ You can also run the playground as a separate Flask app that proxies to the agen
 
 ```bash
 # Terminal 1: Start the agent
-make run
-
-# Terminal 2: Open in the same directory as Terminal 1
-uv run flask --app playground/app run --port 5001
+cd agents/google/adk
+# Kill any existing process on port 8000 to avoid conflicts
+lsof -ti:8000 | xargs kill -9 2>/dev/null; make run
 ```
 
-| Variable    | Default                  | Description                     |
-|-------------|--------------------------|---------------------------------|
-| `AGENT_URL` | `http://localhost:8000`  | URL of the running agent API    |
+```bash
+# Terminal 2: Start the Flask playground
+cd agents/google/adk
+# Kill any existing process on port 5001 to avoid conflicts
+lsof -ti:5001 | xargs kill -9 2>/dev/null; uv run flask --app playground/app run --port 5001
+```
+
+Open [http://localhost:5001](http://localhost:5001) in your browser.
+
+| Variable    | Default                 | Description                  |
+|-------------|-------------------------|------------------------------|
+| `AGENT_URL` | `http://localhost:8000` | URL of the running agent API |
 
 If the agent runs on a different host or port:
 
@@ -104,7 +120,7 @@ AGENT_URL=https://your-agent-url uv run flask --app playground/app run --port 50
 
 ```bash
 cd agents/google/adk
-make init        # creates .env from .env.example
+make init
 ```
 
 ### Configuration
@@ -112,10 +128,10 @@ make init        # creates .env from .env.example
 Edit `.env` with your model endpoint and container image:
 
 ```ini
-API_KEY=your-api-key-here
-BASE_URL=https://your-model-endpoint.com/v1
-MODEL_ID=llama-3.1-8b-instruct
-CONTAINER_IMAGE=quay.io/your-username/google-adk-agent:latest
+API_KEY = your-api-key-here
+BASE_URL = https://your-model-endpoint.com/v1
+MODEL_ID = llama-3.1-8b-instruct
+CONTAINER_IMAGE = quay.io/your-username/google-adk-agent:latest
 ```
 
 **Notes:**
@@ -134,7 +150,9 @@ CONTAINER_IMAGE=quay.io/your-username/google-adk-agent:latest
     - Docker Hub: `docker.io/your-username/google-adk-agent:latest`
     - GHCR: `ghcr.io/your-org/google-adk-agent:latest`
 
-  > **Note:** OpenShift must be able to pull the container image. Make the image **public**, or configure an [image pull secret](https://docs.openshift.com/container-platform/latest/openshift_images/managing_images/using-image-pull-secrets.html) for private registries.
+  > **Note:** OpenShift must be able to pull the container image. Make the image **public**, or configure
+  an [image pull secret](https://docs.openshift.com/container-platform/latest/openshift_images/managing_images/using-image-pull-secrets.html)
+  for private registries.
 
 ### Building the Container Image
 
