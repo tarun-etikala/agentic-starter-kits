@@ -95,7 +95,7 @@ source ./init.sh
 uv sync
 ```
 
-Use **three terminals** (after `source ./init.sh` in each, or export the same vars):
+Use **two terminals** (after `source ./init.sh` in each, or export the same vars):
 
 ```bash
 # Terminal 1
@@ -103,12 +103,13 @@ uv run python -m a2a_langgraph_crewai.crew_a2a_server
 
 # Terminal 2
 uv run python -m a2a_langgraph_crewai.langgraph_a2a_server
-
-# Terminal 3
-uv run python -m a2a_langgraph_crewai.demo_client "Your question here"
 ```
 
 Default ports: **9100** (Crew), **9200** (LangGraph). Do not set `PORT` unless you mirror the container (`8080`).
+
+### Playground (LangGraph orchestrator)
+
+With the LangGraph server running (terminal 2), open **http://127.0.0.1:9200/** in a browser. The chat uses **A2A JSON-RPC** on **`POST /`** with **`message/send`** (request body = `SendMessageRequest`, same shape as the **curl** examples under **Deploying to OpenShift**). The right-hand panel shows the outgoing JSON and the raw JSON-RPC response. The server also exposes **`POST /chat/completions`** (OpenAI-style) for parity with other agents. For local `curl`, use `http://127.0.0.1:9200` instead of the OpenShift route host.
 
 ---
 
@@ -146,15 +147,48 @@ source ./init.sh
 5. Read public hostnames from `oc get route` and set `CREW_A2A_PUBLIC_URL` / `LANGGRAPH_A2A_PUBLIC_URL` to `https://…`
 6. Apply `Deployment` manifests with those URLs (Agent Card for external clients). The LangGraph pod uses in-cluster `CREW_A2A_URL=http://a2a-crew-agent:8080`
 
-### Test from your laptop (demo client)
+### HTTP examples (LangGraph route)
+
+Use the **LangGraph** Route (`a2a-langgraph-agent`), not the Crew route. Routes terminate TLS at the edge; use **`https://`**.
+
+Get the route hostname (replace **`<YOUR_ROUTE_URL>`** below with that host, e.g. `a2a-langgraph-agent-myproject.apps.example.com`):
 
 ```bash
-export LANGGRAPH_A2A_PUBLIC_URL="https://$(oc get route a2a-langgraph-agent -o jsonpath='{.spec.host}')"
-uv run python -m a2a_langgraph_crewai.demo_client "Find the 'Red Hat' encrypted string using your web search tool."
+oc get route a2a-langgraph-agent -o jsonpath='{.spec.host}'
+```
+
+**Agent card**
+
+```bash
+curl -sS "https://<YOUR_ROUTE_URL>/.well-known/agent-card.json"
+```
+
+**A2A JSON-RPC (`message/send` on `POST /`)**
+
+Same protocol as the browser playground: JSON-RPC 2.0 body = `SendMessageRequest` (see [a2a-sdk](https://pypi.org/project/a2a-sdk/)). Use a unique `messageId` (e.g. 32 hex chars) per request. The example below uses a **single-line** `-d '…'` body (no `'` inside the user text, so bash quoting stays simple):
+
+```bash
+curl -sS -X POST "https://<YOUR_ROUTE_URL>/" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"jsonrpc":"2.0","method":"message/send","params":{"message":{"role":"user","parts":[{"kind":"text","text":"Use the web search tool to find the Red Hat encrypted string."}],"messageId":"0123456789abcdef0123456789abcdef"}},"id":"curl-req-1"}'
+```
+
+The response is JSON-RPC (`result` or `error`), not OpenAI chat format.
+
+**OpenAI-style chat (`POST /chat/completions`)**
+
+Also available for parity with other agents in this repo (non-streaming example):
+
+```bash
+curl -sS -X POST "https://<YOUR_ROUTE_URL>/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{"messages":[{"role":"user","content":"Use the web search tool to find the Red Hat encrypted string."}],"stream":false}'
 ```
 
 ### Operational notes
 
+- **A2A LangGraph → Crew**: `a2a_reply.send_a2a_text_message` logs each real `message/send` at **INFO** (peer URL, JSON-RPC id, text length, short preview). For full request/response JSON as seen by the client, run the LangGraph pod with **`LOG_LEVEL=DEBUG`** (or set the logger `a2a_langgraph_crewai.a2a_reply` to DEBUG) and read **`oc logs`** for the orchestrator Deployment.
 - **TLS**: Routes use `edge` termination (same pattern as other agents in this repo).
 - **Secrets**: do not commit `.env`; `API_KEY` is stored in the Kubernetes `Secret`.
 - **Resources**: tune limits in YAML if your LLM stack needs it.
@@ -181,10 +215,12 @@ uv run python -m a2a_langgraph_crewai.demo_client "Find the 'Red Hat' encrypted 
 | `init.sh` | Load and validate `.env` (use `source ./init.sh`) |
 | `src/a2a_langgraph_crewai/` | Python package |
 | `src/a2a_langgraph_crewai/crew_a2a_server.py` | CrewAI A2A server |
-| `src/a2a_langgraph_crewai/langgraph_a2a_server.py` | LangGraph A2A server (calls Crew) |
+| `src/a2a_langgraph_crewai/langgraph_a2a_server.py` | LangGraph A2A server (calls Crew); playground UI + OpenAI-style chat |
+| `src/a2a_langgraph_crewai/playground/templates/index.html` | Playground (chat + JSON-RPC trace panel) |
+| `src/a2a_langgraph_crewai/images/rh_logo.svg` | Logo for playground watermark |
 | `src/a2a_langgraph_crewai/a2a_reply.py` | A2A client helper |
 | `src/a2a_langgraph_crewai/custom_tool.py` | Dummy Web Search tool |
-| `src/a2a_langgraph_crewai/demo_client.py` | JSON-RPC example against the orchestrator |
+| `src/a2a_langgraph_crewai/demo_client.py` | Optional CLI JSON-RPC client (same `POST /` as playground and curl) |
 | `Dockerfile` + `entrypoint.sh` | One image; `entrypoint.sh` reads `A2A_ROLE` |
 | `k8s/*.yaml` | Deployment / Service / Route |
 | `deploy.sh` | Build, push, apply (run after `source ./init.sh`) |
