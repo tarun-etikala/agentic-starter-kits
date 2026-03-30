@@ -29,7 +29,6 @@ from flask import (
     stream_with_context,
 )
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 IMAGES_DIR = Path(__file__).resolve().parents[4] / "images"
@@ -121,7 +120,7 @@ def chat():
 
                 for chunk in resp.iter_content(chunk_size=None, decode_unicode=True):
                     if chunk:
-                        logger.debug("Chunk: %s", chunk[:200])
+                        logger.debug("Chunk received (size=%d)", len(chunk))
                         yield chunk
 
         except http_requests.exceptions.ConnectionError:

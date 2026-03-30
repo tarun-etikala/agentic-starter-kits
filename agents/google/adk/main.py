@@ -121,8 +121,10 @@ async def lifespan(app: FastAPI):
     base_url = getenv("BASE_URL")
     model_id = getenv("MODEL_ID")
 
-    if base_url and not base_url.endswith("/v1"):
-        base_url = base_url.rstrip("/") + "/v1"
+    if base_url:
+        base_url = base_url.rstrip("/")
+        if not base_url.endswith("/v1"):
+            base_url += "/v1"
 
     runner = get_runner(model_id=model_id, base_url=base_url)
 
@@ -152,7 +154,9 @@ def _extract_user_message(messages: list[ChatMessage]) -> str:
     for msg in reversed(messages):
         if msg.role == "user":
             return msg.content
-    raise ValueError("No user message found in messages list")
+    raise HTTPException(
+        status_code=400, detail="No user message found in messages list"
+    )
 
 
 def _extract_text_from_events(events: list) -> str:
