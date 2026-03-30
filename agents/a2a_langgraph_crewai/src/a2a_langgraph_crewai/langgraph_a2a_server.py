@@ -34,7 +34,13 @@ from a2a.server.apps import A2AStarletteApplication
 from a2a.server.events import EventQueue
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
-from a2a.types import AgentCapabilities, AgentCard, AgentSkill, MessageSendParams, SendMessageRequest
+from a2a.types import (
+    AgentCapabilities,
+    AgentCard,
+    AgentSkill,
+    MessageSendParams,
+    SendMessageRequest,
+)
 from a2a.utils import new_agent_text_message
 
 from .a2a_reply import send_a2a_text_message
@@ -157,12 +163,7 @@ def _jsonrpc_message_send_envelope(user_text: str) -> dict[str, Any]:
         id=req_id,
         params=MessageSendParams(**payload),
     )
-    return {
-        "jsonrpc": "2.0",
-        "method": "message/send",
-        "params": send_req.model_dump(mode="json", exclude_none=True),
-        "id": req_id,
-    }
+    return send_req.model_dump(mode="json", exclude_none=True)
 
 
 def _jsonrpc_ok_envelope(request_id: str, assistant_text: str) -> dict[str, Any]:
@@ -294,7 +295,9 @@ async def _chat_completions(request: Request) -> JSONResponse | StreamingRespons
         {
             "id": "chatcmpl-a2a-playground",
             "object": "chat.completion",
-            "choices": [{"index": 0, "message": {"role": "assistant", "content": reply}}],
+            "choices": [
+                {"index": 0, "message": {"role": "assistant", "content": reply}}
+            ],
             "a2a_protocol": {
                 "jsonrpc_request": rpc_req,
                 "jsonrpc_response": rpc_resp,
@@ -303,7 +306,9 @@ async def _chat_completions(request: Request) -> JSONResponse | StreamingRespons
     )
 
 
-def _build_starlette_app(agent_card: AgentCard, handler: DefaultRequestHandler) -> Starlette:
+def _build_starlette_app(
+    agent_card: AgentCard, handler: DefaultRequestHandler
+) -> Starlette:
     a2a_factory = A2AStarletteApplication(
         agent_card=agent_card,
         http_handler=handler,
