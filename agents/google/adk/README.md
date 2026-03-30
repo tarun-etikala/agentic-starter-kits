@@ -13,263 +13,221 @@ connector to route inference through a LlamaStack server's OpenAI-compatible API
 
 ---
 
-### Preconditions:
+## Prerequisites
 
-- You need to change .env.template file to .env
-- Decide what way you want to go `local` or `RH OpenShift Cluster` and fill needed values
-- use `./init.sh` that will add those values from .env to environment variables
+- [uv](https://docs.astral.sh/uv/) — Python package manager
+- [Podman](https://podman.io/) or [Docker](https://www.docker.com/) — for local container builds (Option A)
+- [oc](https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html) — for OpenShift deployment
+- [Helm](https://helm.sh/) — for deploying to Kubernetes/OpenShift
+- [GNU Make](https://www.gnu.org/software/make/) and a bash-compatible shell — on Windows, use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) (recommended) or [Git Bash](https://git-scm.com/downloads)
 
-Go to agent dir
+## Deploying Locally
+
+### Setup
 
 ```bash
 cd agents/google/adk
+make init        # creates .env from .env.example
 ```
 
-Change the name of .env file
+### Configuration
+
+#### Pointing to a locally hosted model
+
+```ini
+API_KEY=not-needed
+BASE_URL=http://localhost:8321/v1
+MODEL_ID=ollama/llama3.2:3b
+```
+
+See [Local Development](../../../docs/local-development.md) for Ollama + Llama Stack setup for local model serving.
+
+#### Pointing to a remotely hosted model
+
+```ini
+API_KEY=your-api-key-here
+BASE_URL=https://your-model-endpoint.com/v1
+MODEL_ID=llama-3.1-8b-instruct
+```
+
+**Notes:**
+
+- `API_KEY` - your API key or contact your cluster administrator
+- `BASE_URL` - should end with `/v1`
+- `MODEL_ID` - model identifier available on your endpoint
+
+### Running the Agent
+
+#### Web Playground (`make run`)
 
 ```bash
-mv template.env .env
+make run
 ```
 
-#### Local
+Open [http://localhost:8000](http://localhost:8000) in your browser. A green dot in the header means the agent is connected and ready.
 
-Edit the `.env` file with your local configuration:
+#### Interactive CLI (`make run-cli`)
 
+For terminal-based testing without a browser:
+
+```bash
+make run-cli
 ```
-BASE_URL=http://localhost:8321
-MODEL_ID=ollama/llama3.2:3b
-API_KEY=not-needed
-CONTAINER_IMAGE=not-needed
+
+This launches an interactive prompt where you can pick predefined questions or type your own. Tool calls and results are displayed inline with colored output.
+
+#### Standalone Flask Playground (alternative)
+
+You can also run the playground as a separate Flask app that proxies to the agent:
+
+```bash
+# Terminal 1: Start the agent
+make run
+
+# Terminal 2: Open in the same directory as Terminal 1
+uv run flask --app playground/app run --port 5001
 ```
 
-#### OpenShift Cluster
+| Variable    | Default                  | Description                     |
+|-------------|--------------------------|---------------------------------|
+| `AGENT_URL` | `http://localhost:8000`  | URL of the running agent API    |
 
-Edit the `.env` file and fill in all required values:
+If the agent runs on a different host or port:
 
+```bash
+AGENT_URL=https://your-agent-url uv run flask --app playground/app run --port 5001
 ```
+
+## Deploying to OpenShift
+
+### Setup
+
+```bash
+cd agents/google/adk
+make init        # creates .env from .env.example
+```
+
+### Configuration
+
+Edit `.env` with your model endpoint and container image:
+
+```ini
 API_KEY=your-api-key-here
-BASE_URL=https://your-llama-stack-distribution.com/v1
+BASE_URL=https://your-model-endpoint.com/v1
 MODEL_ID=llama-3.1-8b-instruct
 CONTAINER_IMAGE=quay.io/your-username/google-adk-agent:latest
 ```
 
 **Notes:**
 
-- `API_KEY` - contact your cluster administrator
+- `API_KEY` - your API key or contact your cluster administrator
 - `BASE_URL` - should end with `/v1`
-- `MODEL_ID` - contact your cluster administrator
-- `CONTAINER_IMAGE` - full image path where the agent container will be pushed and pulled from.
-  The image is built locally, pushed to this registry, and then deployed to OpenShift.
+- `MODEL_ID` - model identifier available on your endpoint
+- `CONTAINER_IMAGE` – full image path where the agent container will be pushed and pulled from. The image is built
+  locally, pushed to this registry, and then deployed to OpenShift.
 
   Format: `<registry>/<namespace>/<image-name>:<tag>`
 
   Examples:
+
     - Quay.io: `quay.io/your-username/google-adk-agent:latest`
     - Docker Hub: `docker.io/your-username/google-adk-agent:latest`
     - GHCR: `ghcr.io/your-org/google-adk-agent:latest`
 
-Create and activate a virtual environment (Python 3.12) in this directory using [uv](https://docs.astral.sh/uv/):
+  > **Note:** OpenShift must be able to pull the container image. Make the image **public**, or configure an [image pull secret](https://docs.openshift.com/container-platform/latest/openshift_images/managing_images/using-image-pull-secrets.html) for private registries.
+
+### Building the Container Image
+
+#### Option A: Build locally and push to a registry
+
+Requires Podman (or Docker) and a registry account (e.g., Quay.io).
 
 ```bash
-uv venv --python 3.12
-source .venv/bin/activate
+make build    # builds the image locally
+make push     # pushes to the registry specified in CONTAINER_IMAGE
 ```
 
-(On Windows: `.venv\Scripts\activate`)
+#### Option B: Build in-cluster via OpenShift BuildConfig
 
-Make scripts executable
+No Podman, Docker, or registry account needed — just the `oc` CLI.
 
 ```bash
-chmod +x init.sh
+make build-openshift
 ```
 
-Add to values from .env to environment variables
+After the build completes, set `CONTAINER_IMAGE` in your `.env` to the internal registry URL printed after the build.
+
+### Deploying
+
+#### Preview manifests (`make dry-run`)
 
 ```bash
-source ./init.sh
+make dry-run          # preview rendered Helm manifests (secrets redacted)
 ```
 
----
-
-## Local usage (Ollama + LlamaStack Server)
-
-Create package with agent and install it to venv
+#### Deploy (`make deploy`)
 
 ```bash
-uv pip install -e .
+make deploy
 ```
 
-```bash
-uv pip install ollama
-```
+#### Verify deployment
 
-Install app from Ollama site or via Brew
+After deploying, the application may take about a minute to become available while the pod starts up.
 
-```bash
-#brew install ollama
-# or
-curl -fsSL https://ollama.com/install.sh | sh
-```
-
-Pull Required Model
-
-```bash
-ollama pull llama3.1:8b
-```
-
-Start Ollama Service
-
-```bash
-ollama serve
-```
-
-> **Keep this terminal open!**\
-> Ollama needs to keep running.
-
-Start LlamaStack Server
-
-```bash
-llama stack run ../../../run_llama_server.yaml
-```
-
-> **Keep this terminal open** - the server needs to keep running.\
-> You should see output indicating the server started on `http://localhost:8321`.
-
-Run the example:
-
-```bash
-uv run examples/execute_ai_service_locally.py
-```
-
----
-
-## LlamaStack Connectivity via LiteLLM
-
-This agent uses **Google ADK 2.0** with the **LiteLLM model connector** to connect to LlamaStack or any
-OpenAI-compatible endpoint:
-
-- **LiteLLM** translates between ADK's model interface and OpenAI-compatible APIs
-- **`OPENAI_API_BASE`**: Set automatically from `BASE_URL` to point to LlamaStack (e.g., `http://localhost:8321/v1`)
-- **`OPENAI_API_KEY`**: Set automatically from `API_KEY`; can be `not-needed` for local LlamaStack
-- **Model format**: Uses `openai/<model_id>` prefix for LiteLLM's OpenAI provider routing
-
-The OpenAI-compatible API allows **switching between providers** without code changes:
-just update `BASE_URL`, `MODEL_ID`, and `API_KEY` in your `.env` file.
-
-### Supported Providers:
-
-- **Local**: Ollama via LlamaStack (`http://localhost:8321/v1`)
-- **OpenAI**: OpenAI API (`https://api.openai.com/v1`)
-- **Azure OpenAI**: Azure endpoints
-- **vLLM**: Self-hosted vLLM servers
-- **Any OpenAI-compatible API**
-
----
-
-## Deployment on RedHat OpenShift Cluster
-
-Login to OC
-
-```bash
-oc login -u "login" -p "password" https://super-link-to-cluster:111
-```
-
-Login ex. Docker
-
-```bash
-docker login -u='login' -p='password' quay.io
-```
-
-Make deploy file executable
-
-```bash
-chmod +x deploy.sh
-```
-
-Build image and deploy Agent
-
-```bash
-./deploy.sh
-```
-
-This will:
-
-- Create Kubernetes secret for API key
-- Build and push the Docker image
-- Deploy the agent to OpenShift
-- Create Service and Route
-
-COPY the route URL and PASTE into the CURL below
+The route URL is printed after `make deploy`. You can also retrieve it manually:
 
 ```bash
 oc get route google-adk-agent -o jsonpath='{.spec.host}'
 ```
 
-Send a test request:
-
-Non-streaming
+#### Remove deployment (`make undeploy`)
 
 ```bash
-curl -X POST https://<YOUR_ROUTE_URL>/chat/completions \
+make undeploy
+```
+
+See [OpenShift Deployment](../../../docs/openshift-deployment.md) for more details.
+
+## API Endpoints
+
+### POST /chat/completions
+
+Non-streaming:
+
+```bash
+curl -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "Best server service?"}], "stream": false}'
 ```
 
-Streaming
+Streaming:
 
 ```bash
-curl -X POST https://<YOUR_ROUTE_URL>/chat/completions \
+curl -sN -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{
-    "messages": [{"role": "user", "content": "Search for RedHat OpenShift"}],
-    "stream": true
-  }'
+  -d '{"messages": [{"role": "user", "content": "Search for RedHat OpenShift"}], "stream": true}'
 ```
 
----
-
-## Playground UI
-
-A browser-based chat interface served directly by the agent at the root URL — no separate process needed.
-
-### Running the Playground
-
-Start the agent and the playground in two terminals:
-
-Agent:
+Pretty Printed Stream:
 
 ```bash
-cd agents/google/adk
-source .venv/bin/activate
-source ./init.sh
-lsof -ti:8000 | xargs kill -9 2>/dev/null
-uvicorn main:app --port 8000
+curl -sN -X POST http://localhost:8000/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "Search for RedHat OpenShift"}], "stream": true}' |
+   jq -R -r -j --stream 'scan("^data:(.*)")[] | fromjson.choices[0].delta.content // empty'
 ```
 
-UI App:
+### GET /health
 
 ```bash
-cd agents/google/adk
-source .venv/bin/activate
-source ./init.sh
-lsof -ti:5001 | xargs kill -9 2>/dev/null
-flask --app playground/app run --port 5001
+curl http://localhost:8000/health
 ```
 
-Open [http://localhost:5001](http://localhost:5001) in your browser.
-
-A green dot in the header means the agent is connected and ready. Type a message and press **Enter** to send.
-
-When deployed to OpenShift, the playground is available at the route URL.
-
-| Variable    | Default                 | Description                  |
-|-------------|-------------------------|------------------------------|
-| `AGENT_URL` | `http://localhost:8000` | URL of the running agent API |
-
-If the agent runs on a different host or port:
+## Tests
 
 ```bash
-AGENT_URL=https://your-agent-url flask --app playground/app run --port 5001
+make test
 ```
 
 ---
@@ -339,7 +297,7 @@ TOOLS = [dummy_web_search, my_custom_tool]
 
 **Error: "OPENAI_API_BASE not set"**
 
-- Solution: Ensure `BASE_URL` is set in your `.env` file and run `source ./init.sh`
+- Solution: Ensure `BASE_URL` is set in your `.env` file
 
 **Tool calls returned as plain text instead of function calls**
 
