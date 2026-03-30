@@ -3,7 +3,9 @@ __pycache__
 *.pyc
 .env
 .git
-k8s
 *.md
-deploy.sh
 template.env
+charts
+Makefile
+agent.yaml
+values.yaml
