@@ -36,7 +36,7 @@ spec:
             - name: API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: a2a-langgraph-crewai-secrets
+                  name: {{ include "a2a.secretName" . }}
                   key: api-key
             - name: BASE_URL
               value: {{ .Values.env.BASE_URL | quote }}
