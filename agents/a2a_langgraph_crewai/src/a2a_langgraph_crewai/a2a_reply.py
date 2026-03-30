@@ -10,15 +10,6 @@ from uuid import uuid4
 
 import httpx
 
-logger = logging.getLogger(__name__)
-
-# Legacy client is still the simplest JSON-RPC surface used in a2a-samples.
-warnings.filterwarnings(
-    "ignore",
-    message=".*A2AClient is deprecated.*",
-    category=DeprecationWarning,
-)
-
 from a2a.client import A2ACardResolver, A2AClient
 from a2a.types import (
     JSONRPCErrorResponse,
@@ -28,6 +19,15 @@ from a2a.types import (
     Task,
 )
 from a2a.utils import get_artifact_text, get_message_text
+
+logger = logging.getLogger(__name__)
+
+# Legacy client is still the simplest JSON-RPC surface used in a2a-samples.
+warnings.filterwarnings(
+    "ignore",
+    message=".*A2AClient is deprecated.*",
+    category=DeprecationWarning,
+)
 
 
 def _unwrap_send_result(response: Any) -> Any:
@@ -115,5 +115,7 @@ async def send_a2a_text_message(
             req.id,
             len(out),
         )
-        logger.debug("A2A ← assistant text: %s", out if len(out) <= 4000 else f"{out[:4000]}…")
+        logger.debug(
+            "A2A ← assistant text: %s", out if len(out) <= 4000 else f"{out[:4000]}…"
+        )
         return out

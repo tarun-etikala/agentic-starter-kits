@@ -48,8 +48,9 @@ def _ensure_llm() -> LLM:
     api_key = getenv("API_KEY", "no-key")
     if not base_url or not model_id:
         raise RuntimeError("BASE_URL and MODEL_ID must be set (see template.env).")
+    base_url = base_url.rstrip("/")
     if not base_url.endswith("/v1"):
-        base_url = base_url.rstrip("/") + "/v1"
+        base_url = f"{base_url}/v1"
     _llm = LLM(
         model=f"openai/{model_id}",
         base_url=base_url,
@@ -98,7 +99,7 @@ class CrewA2AExecutor(AgentExecutor):
         try:
             result = await asyncio.to_thread(_run_crew, text)
             await event_queue.enqueue_event(new_agent_text_message(result))
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             logger.exception("Crew kickoff failed")
             await event_queue.enqueue_event(
                 new_agent_text_message("CrewAI error: request failed.")
