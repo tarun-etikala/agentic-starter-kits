@@ -67,9 +67,9 @@ def _crew_base_url() -> str:
 
 def _normalize_openai_base_url(base_url: str) -> str:
     """Match crew_a2a_server + react_agent: OpenAI-compatible chat is under .../v1/chat/completions."""
-    u = base_url.strip()
+    u = base_url.strip().rstrip("/")
     if not u.endswith("/v1"):
-        u = u.rstrip("/") + "/v1"
+        u = f"{u}/v1"
     return u
 
 
