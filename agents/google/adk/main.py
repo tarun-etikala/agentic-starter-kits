@@ -432,6 +432,8 @@ async def playground():
 @app.get("/images/{filename:path}", include_in_schema=False)
 async def serve_image(filename: str):
     """Serve images from the project-level images directory."""
+    if Path(filename).is_absolute():
+        raise HTTPException(status_code=404, detail="Image not found")
     base = _IMAGES_DIR.resolve()
     file_path = (base / filename).resolve()
     try:
