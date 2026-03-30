@@ -32,7 +32,7 @@ spec:
             - name: LANGGRAPH_A2A_PUBLIC_URL
               value: {{ .Values.langgraphPublicUrl | quote }}
             - name: CREW_A2A_URL
-              value: "http://a2a-crew-agent:8080"
+              value: "http://a2a-crew-agent:{{ .Values.service.port }}"
             - name: API_KEY
               valueFrom:
                 secretKeyRef:
