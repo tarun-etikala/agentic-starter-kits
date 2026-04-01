@@ -239,7 +239,7 @@ async def _serve_image(request: Request) -> FileResponse:
     try:
         file_path.relative_to(base)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Not found")
+        raise HTTPException(status_code=404, detail="Not found") from None
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Not found")
     return FileResponse(file_path)
