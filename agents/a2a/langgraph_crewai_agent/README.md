@@ -124,7 +124,7 @@ Log in to the cluster and registry:
 ```bash
 oc login --token=<token> --server=https://<cluster-api-url>
 oc project <namespace>
-docker login -u='login' -p='password' quay.io
+docker login quay.io
 ```
 
 ### Configuration

@@ -222,12 +222,14 @@ async def _playground_page(_request: Request) -> FileResponse:
 
 
 async def _health(_request: Request) -> JSONResponse:
-    return JSONResponse(
-        {
-            "status": "healthy",
-            "agent_initialized": _graph is not None,
-        }
-    )
+    try:
+        _ensure_graph()
+    except Exception:
+        return JSONResponse(
+            {"status": "unhealthy", "agent_initialized": False},
+            status_code=503,
+        )
+    return JSONResponse({"status": "healthy", "agent_initialized": True})
 
 
 async def _serve_image(request: Request) -> FileResponse:
