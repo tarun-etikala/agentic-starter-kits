@@ -239,13 +239,26 @@ The response is JSON-RPC (`result` or `error`), not OpenAI chat format.
 
 **OpenAI-style chat (`POST /chat/completions`)**
 
-Also available for parity with other agents in this repo (non-streaming example):
+Also available for parity with other agents in this repo.
+
+Non-streaming:
 
 ```bash
 curl -sS -X POST "https://<YOUR_ROUTE_URL>/chat/completions" \
   -H "Content-Type: application/json" \
   -d '{"messages":[{"role":"user","content":"Use the web search tool to find the Red Hat encrypted string."}],"stream":false}'
 ```
+
+Streaming (SSE; use `-N` / `--no-buffer` so chunks print as they arrive):
+
+```bash
+curl -sS -N -X POST "https://<YOUR_ROUTE_URL>/chat/completions" \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{"messages":[{"role":"user","content":"Hello"}],"stream":true}'
+```
+
+For local runs, use `http://127.0.0.1:9200` instead of `https://<YOUR_ROUTE_URL>` (see **Deploying Locally**). The stream may include leading `a2a.protocol` trace events before `chat.completion.chunk` lines.
 
 ### Operational notes
 - **A2A LangGraph → Crew**: `a2a_reply.send_a2a_text_message` logs each real 

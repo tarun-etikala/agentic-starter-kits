@@ -12,8 +12,10 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from os import getenv
 from pathlib import Path
+from collections.abc import AsyncIterator
 from typing import Any
 from uuid import uuid4
 
@@ -124,20 +126,29 @@ def _ensure_graph():
     return _graph
 
 
+def _single_ai_text(message: AIMessage) -> str:
+    """String content from one AIMessage (handles string or structured content blocks)."""
+    c = message.content
+    if isinstance(c, str):
+        return c
+    if isinstance(c, list):
+        parts = []
+        for block in c:
+            if isinstance(block, dict) and block.get("type") == "text":
+                parts.append(block.get("text", ""))
+        return "\n".join(parts) if parts else str(c)
+    return str(c) if c else ""
+
+
 def _last_ai_text(messages: list) -> str:
     for m in reversed(messages):
         if isinstance(m, AIMessage):
-            c = m.content
-            if isinstance(c, str):
-                return c
-            if isinstance(c, list):
-                parts = []
-                for block in c:
-                    if isinstance(block, dict) and block.get("type") == "text":
-                        parts.append(block.get("text", ""))
-                return "\n".join(parts) if parts else str(c)
-            return str(c)
+            return _single_ai_text(m)
     return ""
+
+
+def _make_completion_id() -> str:
+    return f"chatcmpl-{uuid4().hex[:12]}"
 
 
 async def run_orchestrator(user_text: str) -> str:
@@ -178,6 +189,168 @@ def _jsonrpc_ok_envelope(request_id: str, assistant_text: str) -> dict[str, Any]
             },
         },
     }
+
+
+def _stream_chunk_text(raw: Any) -> str:
+    """Normalize LangChain stream chunk content to a string."""
+    if raw is None:
+        return ""
+    if isinstance(raw, str):
+        return raw
+    if isinstance(raw, list):
+        parts: list[str] = []
+        for block in raw:
+            if isinstance(block, dict) and block.get("type") == "text":
+                parts.append(str(block.get("text", "")))
+            elif isinstance(block, str):
+                parts.append(block)
+        return "".join(parts)
+    return str(raw)
+
+
+def _tool_call_to_delta(tc: Any, index: int) -> dict[str, Any]:
+    if isinstance(tc, dict):
+        tid = tc.get("id", "")
+        name = tc.get("name", "")
+        args = tc.get("args", {})
+    else:
+        tid = getattr(tc, "id", "") or ""
+        name = getattr(tc, "name", "") or ""
+        args = getattr(tc, "args", {}) or {}
+    return {
+        "index": index,
+        "id": tid,
+        "type": "function",
+        "function": {
+            "name": name,
+            "arguments": json.dumps(args) if not isinstance(args, str) else args,
+        },
+    }
+
+
+async def _stream_orchestrator_sse(
+    user_text: str,
+    rpc_req: dict[str, Any],
+    req_id: str,
+) -> AsyncIterator[str]:
+    """Stream OpenAI `chat.completion.chunk` SSE lines, then A2A JSON-RPC trace and `[DONE]`."""
+    graph = _ensure_graph()
+    model_id = getenv("MODEL_ID", "unknown")
+    completion_id = _make_completion_id()
+    created = int(time.time())
+    final_reply = ""
+    streamed_token_parts: list[str] = []
+
+    yield f"data: {json.dumps({'object': 'a2a.protocol', 'phase': 'jsonrpc_request', 'payload': rpc_req})}\n\n"
+
+    try:
+        async for event in graph.astream_events(
+            {"messages": [HumanMessage(content=user_text)]},
+            config={"recursion_limit": 15},
+            version="v2",
+        ):
+            kind = event["event"]
+            if kind == "on_chat_model_stream":
+                chunk = event["data"]["chunk"]
+                text = _stream_chunk_text(getattr(chunk, "content", None))
+                if text:
+                    streamed_token_parts.append(text)
+                    data = {
+                        "id": completion_id,
+                        "object": "chat.completion.chunk",
+                        "created": created,
+                        "model": model_id,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {"content": text},
+                                "finish_reason": None,
+                            }
+                        ],
+                    }
+                    yield f"data: {json.dumps(data)}\n\n"
+            elif kind == "on_chat_model_end":
+                message = event["data"]["output"]
+                if isinstance(message, AIMessage):
+                    t = _single_ai_text(message)
+                    if t.strip():
+                        final_reply = t
+                    tool_calls = getattr(message, "tool_calls", None) or []
+                    if tool_calls:
+                        tool_calls_delta = [
+                            _tool_call_to_delta(tc, i) for i, tc in enumerate(tool_calls)
+                        ]
+                        data = {
+                            "id": completion_id,
+                            "object": "chat.completion.chunk",
+                            "created": created,
+                            "model": model_id,
+                            "choices": [
+                                {
+                                    "index": 0,
+                                    "delta": {
+                                        "role": "assistant",
+                                        "tool_calls": tool_calls_delta,
+                                    },
+                                    "finish_reason": None,
+                                }
+                            ],
+                        }
+                        yield f"data: {json.dumps(data)}\n\n"
+            elif kind == "on_tool_end":
+                output = event["data"].get("output", "")
+                if hasattr(output, "content"):
+                    output = output.content
+                data = {
+                    "id": completion_id,
+                    "object": "chat.completion.chunk",
+                    "created": created,
+                    "model": model_id,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "delta": {
+                                "role": "tool",
+                                "content": str(output),
+                                "name": event.get("name", ""),
+                            },
+                            "finish_reason": None,
+                        }
+                    ],
+                }
+                yield f"data: {json.dumps(data)}\n\n"
+
+        if not final_reply.strip() and streamed_token_parts:
+            final_reply = "".join(streamed_token_parts)
+        if not final_reply.strip():
+            out = await graph.ainvoke(
+                {"messages": [HumanMessage(content=user_text)]},
+                config={"recursion_limit": 15},
+            )
+            final_reply = _last_ai_text(out.get("messages", [])) or str(out)
+
+        rpc_resp = _jsonrpc_ok_envelope(req_id, final_reply)
+        yield f"data: {json.dumps({'object': 'a2a.protocol', 'phase': 'jsonrpc_response', 'payload': rpc_resp, 'hint': 'A2A JSON-RPC over POST / (same method message/send as demo_client / a2a-sdk).'})}\n\n"
+        final_data = {
+            "id": completion_id,
+            "object": "chat.completion.chunk",
+            "created": created,
+            "model": model_id,
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {},
+                    "finish_reason": "stop",
+                }
+            ],
+        }
+        yield f"data: {json.dumps(final_data)}\n\n"
+        yield "data: [DONE]\n\n"
+    except Exception as e:  # noqa: BLE001
+        logger.exception("Playground stream failed")
+        err = {"error": {"message": str(e), "type": "server_error"}}
+        yield f"data: {json.dumps(err)}\n\n"
+        yield "data: [DONE]\n\n"
 
 
 class LangGraphA2AExecutor(AgentExecutor):
@@ -262,27 +435,9 @@ async def _chat_completions(request: Request) -> JSONResponse | StreamingRespons
     rpc_req = _jsonrpc_message_send_envelope(user_text)
     req_id = rpc_req["id"]
 
-    async def run_and_stream():
-        yield f"data: {json.dumps({'object': 'a2a.protocol', 'phase': 'jsonrpc_request', 'payload': rpc_req})}\n\n"
-        try:
-            reply = await run_orchestrator(user_text)
-        except Exception as e:  # noqa: BLE001
-            logger.exception("Playground invoke failed")
-            err = {"error": {"message": str(e), "type": "server_error"}}
-            yield f"data: {json.dumps(err)}\n\n"
-            yield "data: [DONE]\n\n"
-            return
-
-        rpc_resp = _jsonrpc_ok_envelope(req_id, reply)
-        yield f"data: {json.dumps({'object': 'a2a.protocol', 'phase': 'jsonrpc_response', 'payload': rpc_resp, 'hint': 'A2A JSON-RPC over POST / (same method message/send as demo_client / a2a-sdk).'})}\n\n"
-
-        # OpenAI-style deltas (same as other agents' playground)
-        yield f"data: {json.dumps({'choices': [{'delta': {'content': reply}}]})}\n\n"
-        yield "data: [DONE]\n\n"
-
     if stream:
         return StreamingResponse(
-            run_and_stream(),
+            _stream_orchestrator_sse(user_text, rpc_req, req_id),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
@@ -348,7 +503,7 @@ def main() -> None:
         version="0.1.0",
         default_input_modes=["text"],
         default_output_modes=["text"],
-        capabilities=AgentCapabilities(streaming=False),
+        capabilities=AgentCapabilities(streaming=True),
         skills=[skill],
         supports_authenticated_extended_card=False,
     )
