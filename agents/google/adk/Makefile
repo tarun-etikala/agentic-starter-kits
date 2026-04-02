@@ -41,8 +41,8 @@ ollama: ## Install Ollama, start it, and pull models
 	  ollama serve &>/dev/null & \
 	  echo "Waiting for Ollama to be ready..." && \
 	  until ollama list >/dev/null 2>&1; do sleep 1; done && \
-	  echo "==> Pulling llama3.2:3b..." && \
-	  ollama pull llama3.2:3b && \
+	  echo "==> Pulling llama3.1:8b..." && \
+	  ollama pull llama3.1:8b && \
 	  echo "==> Pulling embeddinggemma:latest..." && \
 	  ollama pull embeddinggemma:latest && \
 	  echo "==> Creating Milvus dir..." && \
