@@ -62,8 +62,11 @@ def wrap_func_with_mlflow_trace(func: Callable, span_type: Literal["tool", "agen
     if not tracking_uri:
         return func
 
-    import mlflow
-    from mlflow.entities import SpanType
+    try:
+        import mlflow
+        from mlflow.entities import SpanType
+    except ModuleNotFoundError:
+        return func
 
     if span_type == "tool":
         return mlflow.trace(span_type=SpanType.TOOL, name=name)(func)
@@ -98,7 +101,7 @@ def enable_tracing() -> None:
             health_check_timeout = 5
         check_mlflow_health(mlflow_tracking_uri=tracking_uri, max_wait_time=health_check_timeout)
         logger.info(f"[Tracing] MLflow server is reachable at {tracking_uri}")
-    except RuntimeError as e:
+    except (RuntimeError, ModuleNotFoundError) as e:
         logger.warning(
             f"[Tracing] MLflow server is unreachable at {tracking_uri}. "
             f"Tried connecting for {health_check_timeout}s. Continuing without tracing. Error: {e}"

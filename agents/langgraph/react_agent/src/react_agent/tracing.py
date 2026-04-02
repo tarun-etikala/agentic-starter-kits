@@ -77,7 +77,7 @@ def enable_tracing() -> None:
             health_check_timeout = 5
         check_mlflow_health(mlflow_tracking_uri=tracking_uri, max_wait_time=health_check_timeout)
         logger.info(f"[Tracing] MLflow server is reachable at {tracking_uri}")
-    except RuntimeError as e:
+    except (RuntimeError, ModuleNotFoundError) as e:
         logger.warning(
             f"[Tracing] MLflow server is unreachable at {tracking_uri}. "
             f"Tried connecting for {health_check_timeout}s. Continuing without tracing. Error: {e}"
