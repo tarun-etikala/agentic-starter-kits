@@ -116,6 +116,7 @@ agent_graph = None
 async def lifespan(app: FastAPI):
     """Initialize the RAG agent graph on startup and clear it on shutdown."""
     global agent_graph
+    enable_tracing()
 
     enable_tracing()
 
