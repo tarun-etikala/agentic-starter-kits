@@ -217,13 +217,6 @@ async def _handle_chat(user_content: str, model_id: str):
         ):
             if event.content and event.content.parts:
                 for part in event.content.parts:
-                    if part.text:
-                        role = event.content.role or "model"
-                        context_messages.append(
-                            {"role": "assistant" if role == "model" else role, "content": part.text}
-                        )
-                        if role == "model":
-                            final_text = part.text
                     if part.function_call:
                         context_messages.append(
                             {
@@ -242,7 +235,7 @@ async def _handle_chat(user_content: str, model_id: str):
                                 ],
                             }
                         )
-                    if part.function_response:
+                    elif part.function_response:
                         context_messages.append(
                             {
                                 "role": "tool",
@@ -252,6 +245,13 @@ async def _handle_chat(user_content: str, model_id: str):
                                 ),
                             }
                         )
+                    elif part.text:
+                        role = event.content.role or "model"
+                        context_messages.append(
+                            {"role": "assistant" if role == "model" else role, "content": part.text}
+                        )
+                        if role == "model":
+                            final_text = part.text
 
         return {
             "id": _make_completion_id(),
@@ -335,7 +335,7 @@ async def _handle_stream(user_content: str, model_id: str):
                         }
                         yield f"data: {json.dumps(data)}\n\n"
 
-                    if part.function_response:
+                    elif part.function_response:
                         data = {
                             "id": completion_id,
                             "object": "chat.completion.chunk",
@@ -357,7 +357,7 @@ async def _handle_stream(user_content: str, model_id: str):
                         }
                         yield f"data: {json.dumps(data)}\n\n"
 
-                    if part.text:
+                    elif part.text:
                         data = {
                             "id": completion_id,
                             "object": "chat.completion.chunk",
@@ -426,7 +426,10 @@ if not _IMAGES_DIR.is_dir():
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def playground():
     """Serve the playground chat UI."""
-    return FileResponse(_PLAYGROUND_HTML)
+    return FileResponse(
+        _PLAYGROUND_HTML,
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+    )
 
 
 @app.get("/images/{filename:path}", include_in_schema=False)

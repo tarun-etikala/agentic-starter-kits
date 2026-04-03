@@ -105,6 +105,50 @@
             max-width: 90%;
         }
 
+        .message.tool-call {
+            align-self: flex-start;
+            background: #e8f0fe;
+            color: #1a1a1a;
+            border-left: 3px solid #4285f4;
+            border-radius: 8px;
+            font-size: 13px;
+            max-width: 85%;
+        }
+        .message.tool-call .label { color: #4285f4; }
+        .message.tool-call pre {
+            margin-top: 4px;
+            font-size: 12px;
+            font-family: "SF Mono", Menlo, monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            background: rgba(0,0,0,0.04);
+            padding: 6px 8px;
+            border-radius: 4px;
+        }
+
+        .message.tool-response {
+            align-self: flex-start;
+            background: #e6f4ea;
+            color: #1a1a1a;
+            border-left: 3px solid #34a853;
+            border-radius: 8px;
+            font-size: 13px;
+            max-width: 85%;
+        }
+        .message.tool-response .label { color: #34a853; }
+        .message.tool-response pre {
+            margin-top: 4px;
+            font-size: 12px;
+            font-family: "SF Mono", Menlo, monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            background: rgba(0,0,0,0.04);
+            padding: 6px 8px;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
         .message .meta {
             display: flex;
             justify-content: space-between;
@@ -291,6 +335,76 @@
         if (el) el.remove();
     }
 
+    function addToolCall(name, args) {
+        const div = document.createElement('div');
+        div.className = 'message tool-call';
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.textContent = 'Tool Call';
+        meta.appendChild(label);
+        const ts = document.createElement('div');
+        ts.className = 'timestamp';
+        ts.textContent = formatTimestamp();
+        meta.appendChild(ts);
+        div.appendChild(meta);
+
+        const nameEl = document.createElement('div');
+        nameEl.textContent = name;
+        nameEl.style.fontWeight = '600';
+        div.appendChild(nameEl);
+
+        if (args) {
+            const pre = document.createElement('pre');
+            try {
+                pre.textContent = JSON.stringify(JSON.parse(args), null, 2);
+            } catch (e) {
+                pre.textContent = args;
+            }
+            div.appendChild(pre);
+        }
+
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function addToolResponse(name, content) {
+        const div = document.createElement('div');
+        div.className = 'message tool-response';
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.textContent = 'Tool Result';
+        meta.appendChild(label);
+        const ts = document.createElement('div');
+        ts.className = 'timestamp';
+        ts.textContent = formatTimestamp();
+        meta.appendChild(ts);
+        div.appendChild(meta);
+
+        if (name) {
+            const nameEl = document.createElement('div');
+            nameEl.textContent = name;
+            nameEl.style.fontWeight = '600';
+            div.appendChild(nameEl);
+        }
+
+        const pre = document.createElement('pre');
+        try {
+            pre.textContent = JSON.stringify(JSON.parse(content), null, 2);
+        } catch (e) {
+            pre.textContent = content;
+        }
+        div.appendChild(pre);
+
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
     function setLoading(loading) {
         sendBtn.disabled = loading;
         input.disabled = loading;
@@ -356,7 +470,16 @@
                             }
 
                             const delta = parsed.choices?.[0]?.delta;
-                            if (delta?.content) {
+
+                            if (delta?.tool_calls) {
+                                removeTypingIndicator();
+                                for (const tc of delta.tool_calls) {
+                                    addToolCall(tc.function?.name || 'unknown', tc.function?.arguments);
+                                }
+                            } else if (delta?.role === 'tool') {
+                                removeTypingIndicator();
+                                addToolResponse(delta.name, delta.content);
+                            } else if (delta?.content) {
                                 if (!textEl) {
                                     removeTypingIndicator();
                                     textEl = addMessage('assistant', '', 'streaming');

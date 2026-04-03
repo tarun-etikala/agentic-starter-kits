@@ -54,7 +54,7 @@ The default model is `llama3.1:8b`. To use a different model, pass `MODEL=`:
 `make ollama MODEL=llama3.2:3b`
 
 ```bash
-make ollama                        # pulls llama3.1:8b (default)
+make ollama
 ```
 
 #### Run llama server
@@ -83,41 +83,6 @@ For terminal-based testing without a browser:
 ```bash
 cd agents/google/adk
 make run-cli
-```
-
-## API Endpoints
-
-### POST /chat/completions
-
-Non-streaming:
-
-```bash
-curl -X POST http://localhost:8000/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "Best server service?"}], "stream": false}'
-```
-
-Streaming:
-
-```bash
-curl -sN -X POST http://localhost:8000/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "Search for RedHat OpenShift"}], "stream": true}'
-```
-
-Pretty Printed Stream:
-
-```bash
-curl -sN -X POST http://localhost:8000/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "Search for RedHat OpenShift"}], "stream": true}' |
-   jq -R -r -j --stream 'scan("^data:(.*)")[] | fromjson.choices[0].delta.content // empty'
-```
-
-### GET /health
-
-```bash
-curl http://localhost:8000/health
 ```
 
 ## Deploying to OpenShift
@@ -229,6 +194,41 @@ See [OpenShift Deployment](../../../docs/openshift-deployment.md) for more detai
 
 ```bash
 make test
+```
+
+## API Endpoints
+
+### POST /chat/completions
+
+Non-streaming:
+
+```bash
+curl -X POST http://localhost:8000/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "Best server service?"}], "stream": false}'
+```
+
+Streaming:
+
+```bash
+curl -sN -X POST http://localhost:8000/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "Search for RedHat OpenShift"}], "stream": true}'
+```
+
+Pretty Printed Stream:
+
+```bash
+curl -sN -X POST http://localhost:8000/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "Search for RedHat OpenShift"}], "stream": true}' |
+   jq -R -r -j --stream 'scan("^data:(.*)")[] | fromjson.choices[0].delta.content // empty'
+```
+
+### GET /health
+
+```bash
+curl http://localhost:8000/health
 ```
 
 ---
