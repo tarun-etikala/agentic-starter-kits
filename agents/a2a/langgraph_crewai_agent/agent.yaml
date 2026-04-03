@@ -1,7 +1,7 @@
 name: a2a-langgraph-crewai
 displayName: "A2A LangGraph ↔ CrewAI"
 framework: a2a
-description: "A2A demo — CrewAI specialist and LangGraph orchestrator (two images, one Dockerfile)."
+description: "A2A demo — CrewAI specialist and LangGraph orchestrator (one Dockerfile; two tags / image refs for deploy)."
 env:
   required:
     - API_KEY

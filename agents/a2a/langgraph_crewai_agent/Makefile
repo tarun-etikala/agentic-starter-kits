@@ -21,24 +21,38 @@ _check-env:
 	  done; \
 	  [ -z "$$missing" ] || { echo "ERROR: Missing required env vars:$$missing"; exit 1; }
 
-build: _check-env ## Build and push both images (same Dockerfile, :crew and :langgraph tags)
+build: _check-env ## Build both image tags locally (same Dockerfile; second tag via tag)
 	@[ -n "$(CONTAINER_CLI)" ] || { echo "ERROR: neither podman nor docker found in PATH"; exit 1; }
 	@set -a && source .env && set +a && \
 	if [ -n "$${CONTAINER_IMAGE_CREW:-}" ] && [ -n "$${CONTAINER_IMAGE_LANGGRAPH:-}" ]; then \
-	  $(CONTAINER_CLI) buildx build --platform linux/amd64 -t "$${CONTAINER_IMAGE_CREW}" -f Dockerfile --push . && \
-	  $(CONTAINER_CLI) buildx build --platform linux/amd64 -t "$${CONTAINER_IMAGE_LANGGRAPH}" -f Dockerfile --push . && \
-	  echo "Build+push completed for both image refs."; \
+	  CREW="$${CONTAINER_IMAGE_CREW}"; LG="$${CONTAINER_IMAGE_LANGGRAPH}"; \
 	elif [ -n "$${CONTAINER_IMAGE:-}" ]; then \
 	  _base="$${CONTAINER_IMAGE%%@*}"; _tail="$${_base##*/}"; \
 	  if [[ "$$_tail" == *:* ]]; then _img="$${_base%:*}"; else _img="$$_base"; fi; \
 	  CREW="$${_img}:crew"; LG="$${_img}:langgraph"; \
-	  echo "Using $$CREW and $$LG"; \
-	  $(CONTAINER_CLI) buildx build --platform linux/amd64 -t "$$CREW" -f Dockerfile --push . && \
-	  $(CONTAINER_CLI) buildx build --platform linux/amd64 -t "$$LG" -f Dockerfile --push . && \
-	  echo "Build+push completed for both image refs."; \
 	else \
 	  echo "ERROR: Set CONTAINER_IMAGE or both CONTAINER_IMAGE_CREW and CONTAINER_IMAGE_LANGGRAPH in .env"; exit 1; \
-	fi
+	fi && \
+	echo "Building $$CREW (then tag -> $$LG)..." && \
+	$(CONTAINER_CLI) buildx build --platform linux/amd64 -t "$$CREW" -f Dockerfile . --load && \
+	$(CONTAINER_CLI) tag "$$CREW" "$$LG" && \
+	echo "Build complete: $$CREW and $$LG"
+
+push: _check-env ## Push both image tags to the registry
+	@[ -n "$(CONTAINER_CLI)" ] || { echo "ERROR: neither podman nor docker found in PATH"; exit 1; }
+	@set -a && source .env && set +a && \
+	if [ -n "$${CONTAINER_IMAGE_CREW:-}" ] && [ -n "$${CONTAINER_IMAGE_LANGGRAPH:-}" ]; then \
+	  CREW="$${CONTAINER_IMAGE_CREW}"; LG="$${CONTAINER_IMAGE_LANGGRAPH}"; \
+	elif [ -n "$${CONTAINER_IMAGE:-}" ]; then \
+	  _base="$${CONTAINER_IMAGE%%@*}"; _tail="$${_base##*/}"; \
+	  if [[ "$$_tail" == *:* ]]; then _img="$${_base%:*}"; else _img="$$_base"; fi; \
+	  CREW="$${_img}:crew"; LG="$${_img}:langgraph"; \
+	else \
+	  echo "ERROR: Set CONTAINER_IMAGE or both CONTAINER_IMAGE_CREW and CONTAINER_IMAGE_LANGGRAPH in .env"; exit 1; \
+	fi && \
+	echo "Pushing $$CREW and $$LG..." && \
+	$(CONTAINER_CLI) push "$$CREW" && $(CONTAINER_CLI) push "$$LG" && \
+	echo "Push complete."
 
 deploy: _check-env ## Two-phase Helm deploy (Routes first, then Deployments with public Agent Card URLs)
 	@[ -n "$(CONTAINER_CLI)" ] || true
