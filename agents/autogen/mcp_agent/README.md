@@ -80,6 +80,19 @@ MCP_SERVER_URL=http://127.0.0.1:8000/sse
 When deploying to OpenShift, `make deploy` automatically sets `MCP_SERVER_URL` to the in-cluster MCP service
 (`http://mcp-automl:8080/sse`) unless you override it in `.env`.
 
+#### DNS Rebinding Protection
+
+MCP SDK ≥1.x enables host-header DNS rebinding protection by default. When running the MCP server behind an
+OpenShift Route (or any reverse proxy that rewrites the `Host` header), the MCP server may reject requests.
+To disable this protection, uncomment and set in your `.env`:
+
+```ini
+DISABLE_DNS_REBINDING_PROTECTION=true
+```
+
+This is passed to the MCP server deployment (`make deploy-mcp`). Leave it commented out (protection enabled)
+unless you encounter host-header mismatch errors.
+
 #### MCP AutoML Server Variables
 
 If you plan to deploy the MCP AutoML server to OpenShift (`make deploy-mcp`), set these in your `.env`:

@@ -14,6 +14,7 @@ init: ## Copy .env.example to .env for configuration
 
 run: ## Run agent locally with hot-reload (port 8080)
 	@set -a && source .env && set +a && \
+	  MCP_SERVER_URL="$${MCP_SERVER_URL:-http://127.0.0.1:8000/sse}" \
 	  uv run uvicorn main:app --host 127.0.0.1 --port $${PORT:-8080} --reload --reload-exclude .venv
 
 run-mcp: ## Start MCP AutoML server locally (port 8000)
@@ -45,7 +46,7 @@ build-openshift: ## Build image in-cluster via OpenShift BuildConfig (no podman/
 _check-env:
 	@set -a && source .env 2>/dev/null && set +a; \
 	  missing=""; \
-	  for var in $$(sed -n '/^ *required:/,/^ *[a-z]/{ /^ *- /s/^ *- *//p; }' agent.yaml); do \
+	  for var in $$(sed -n '/^ *required:/,/^ *optional:/{ /^ *- /s/^ *- *//p; }' agent.yaml); do \
 	    eval val="\$$$$var"; \
 	    [ -n "$$val" ] || missing="$$missing $$var"; \
 	  done; \
