@@ -1,12 +1,4 @@
-<div style="text-align: center;">
-
-![AutoGen Logo](/images/autogen_logo.svg)
-
 # AutoGen Agent (MCP)
-
-</div>
-
----
 
 ## What this agent does
 
@@ -93,6 +85,27 @@ DEPLOYMENT_TOKEN=your-model-serving-token
 - `CONTAINER_IMAGE_MCP` — Full image path for the MCP server container
 - `DEPLOYMENT_URL` — URL of the model serving endpoint used by MCP tools (e.g. churn prediction model)
 - `DEPLOYMENT_TOKEN` — Authentication token for the model serving endpoint
+
+#### DNS Rebinding Protection
+
+The MCP SDK (≥1.x) validates the `Host` header on every request to prevent DNS rebinding attacks. By default, the
+server allows `localhost`, `127.0.0.1`, and `[::1]` on any port — so `make run-mcp` works out of the box.
+
+For OpenShift or custom hostnames, add them via `ALLOWED_HOSTS` in your `.env`:
+
+```ini
+ALLOWED_HOSTS=myapp.apps.cluster.example.com
+```
+
+Multiple hosts can be comma-separated. Wildcard ports are supported (e.g. `myhost:*`).
+
+To disable protection entirely (not recommended for production):
+
+```ini
+DISABLE_DNS_REBINDING_PROTECTION=true
+```
+
+Without valid `ALLOWED_HOSTS`, requests from non-localhost hosts will fail with **421 Misdirected Request**.
 
 ### Running the Agent
 

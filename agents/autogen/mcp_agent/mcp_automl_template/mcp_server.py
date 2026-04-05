@@ -11,13 +11,30 @@ load_dotenv()
 
 # Host from env so FastMCP doesn't auto-enable localhost-only DNS rebinding (which rejects Route host).
 _host = getenv("HOST", "0.0.0.0")
-# Disable DNS rebinding check so any Host (e.g. OpenShift Route) is accepted.
+
+# --- Transport security (DNS rebinding protection) ---
+# Priority: DISABLE_DNS_REBINDING_PROTECTION=true  →  skip all checks
+#           ALLOWED_HOSTS=host1,host2               →  add to allowlist
+#           (default)                                →  localhost only
 disable_dns_rebinding = (
     getenv("DISABLE_DNS_REBINDING_PROTECTION", "false").lower() == "true"
 )
-_transport_security = TransportSecuritySettings(
-    enable_dns_rebinding_protection=not disable_dns_rebinding
-)
+if disable_dns_rebinding:
+    _transport_security = TransportSecuritySettings(
+        enable_dns_rebinding_protection=False
+    )
+else:
+    _default_hosts = ["127.0.0.1:*", "localhost:*", "[::1]:*"]
+    _extra = [
+        h.strip()
+        for h in getenv("ALLOWED_HOSTS", "").split(",")
+        if h.strip()
+    ]
+    _transport_security = TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=_default_hosts + _extra,
+    )
+
 # Create an MCP server
 mcp = FastMCP(
     "MCP AutoML Server",
