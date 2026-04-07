@@ -74,6 +74,9 @@ def load_and_index_documents(
     if not docs_to_load:
         docs_to_load = getenv("DOCS_TO_LOAD")
 
+    if not base_url:
+        raise ValueError("BASE_URL must be set in environment or passed as argument")
+
     # LlamaStackClient internally appends /v1, so strip it from base_url if present
     llama_base_url = base_url.rstrip("/").removesuffix("/v1")
     client = LlamaStackClient(
