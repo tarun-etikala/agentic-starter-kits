@@ -24,7 +24,7 @@ build: ## Build container image locally (podman/docker)
 	@[ -n "$(CONTAINER_CLI)" ] || { echo "ERROR: neither podman nor docker found in PATH"; exit 1; } && \
 	  source .env && \
 	  [ -n "$${CONTAINER_IMAGE}" ] || { echo "ERROR: CONTAINER_IMAGE is not set in .env"; exit 1; } && \
-	  cp -r ../../../images ./images && trap 'rm -rf ./images' EXIT && \
+	  rm -rf ./images && cp -r ../../../images ./images && trap 'rm -rf ./images' EXIT && \
 	  $(CONTAINER_CLI) build --platform linux/amd64 -t "$${CONTAINER_IMAGE}" -f Dockerfile .
 
 push: ## Push container image to registry
@@ -34,7 +34,7 @@ push: ## Push container image to registry
 	  $(CONTAINER_CLI) push "$${CONTAINER_IMAGE}"
 
 build-openshift: ## Build image in-cluster via OpenShift BuildConfig (no podman/docker needed)
-	@cp -r ../../../images ./images && trap 'rm -rf ./images' EXIT && \
+	@rm -rf ./images && cp -r ../../../images ./images && trap 'rm -rf ./images' EXIT && \
 	  oc new-build --strategy=docker --binary --name=$(AGENT_NAME) --to=$(AGENT_NAME):latest 2>/dev/null || true && \
 	  oc start-build $(AGENT_NAME) --from-dir=. --follow && \
 	  NS=$$(oc project -q) && \
