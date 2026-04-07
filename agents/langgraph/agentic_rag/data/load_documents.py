@@ -74,13 +74,15 @@ def load_and_index_documents(
     if not docs_to_load:
         docs_to_load = getenv("DOCS_TO_LOAD")
 
+    # LlamaStackClient internally appends /v1, so strip it from base_url if present
+    llama_base_url = base_url.rstrip("/").removesuffix("/v1")
     client = LlamaStackClient(
-        base_url=base_url,
+        base_url=llama_base_url,
         api_key=api_key,
     )
 
     vector_store_id = (getenv("VECTOR_STORE_ID") or "").strip().strip("\"'") or None
-    provider_id = "milvus"
+    provider_id = getenv("VECTOR_STORE_PROVIDER", "milvus")
     embedding_dimension = int(getenv("EMBEDDING_DIMENSION", "768"))
 
     if vector_store_id:
@@ -128,7 +130,7 @@ def load_and_index_documents(
     embeddings = OpenAIEmbeddings(
         model=embedding_model,
         api_key=api_key or "not-needed",
-        base_url=base_url + "/v1",
+        base_url=base_url if base_url.rstrip("/").endswith("/v1") else base_url.rstrip("/") + "/v1",
         check_embedding_ctx_length=False,  # prevent fail if embedding model is not registered in OpenAI Registry
     )
 
