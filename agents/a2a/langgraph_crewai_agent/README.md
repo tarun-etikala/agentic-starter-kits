@@ -1,6 +1,10 @@
 <div style="text-align: center;">
 
+<img src="/images/a2a-logo-black.svg" alt="A2A (Agent-to-Agent) protocol logo" width="100" height="100">
+
 # A2A: LangGraph ↔ CrewAI
+
+*A2A logo from the upstream:* [`A2A project`](https://github.com/a2aproject/A2A/blob/main/docs/assets/a2a-logo-black.svg)
 
 </div>
 
@@ -26,19 +30,24 @@ An **A2A (Agent-to-Agent)** example: a **CrewAI** pod exposes an A2A JSON-RPC se
 
 ### Setup
 
+#### Initiating base
+
 ```bash
 cd agents/a2a/langgraph_crewai_agent
 make init        # creates .env from template.env if missing
 ```
 
-Create and activate a virtual environment (Python 3.12+) using [uv](https://docs.astral.sh/uv/):
+Edit `.env` with your configuration (see [Configuration](#configuration) below).
+
+#### Creating environment
+
+Install dependencies with `make env`, same idea as the Google ADK agent ([Creating environment](../../google/adk/README.md#creating-environment)):
 
 ```bash
-uv venv --python 3.12
-source .venv/bin/activate
+make env
 ```
 
-(On Windows: `.venv\Scripts\activate`)
+This runs `uv sync --python 3.12` and creates or updates `.venv`.
 
 ### Configuration
 
@@ -73,13 +82,22 @@ CONTAINER_IMAGE=quay.io/your-org/a2a-langgraph-crewai:latest
 
 ### Running the agent
 
+Install dependencies and configure `.env`, then either use **Make** (same idea as the Google ADK agent) or run the two Python modules by hand.
+
+**Option A — one terminal (`make run-app`)**
+
 ```bash
-uv sync
+make init         # .env from template.env if needed — then edit .env
+make env          # uv sync into .venv (once)
+make run-app      # Crew in background, LangGraph in foreground (Ctrl+C stops both)
 ```
 
-Export variables from `.env`, then start both servers (two terminals):
+If ports **9100** / **9200** are stuck: `make run-app-fresh`.
+
+**Option B — two terminals (`uv run`)**
 
 ```bash
+uv sync
 set -a && source .env && set +a
 ```
 
@@ -90,6 +108,8 @@ uv run python -m a2a_langgraph_crewai.crew_a2a_server
 # Terminal 2 — LangGraph orchestrator
 uv run python -m a2a_langgraph_crewai.langgraph_a2a_server
 ```
+
+Single-process shortcuts: `make run-crew` or `make run-langgraph`.
 
 Default ports: **9100** (Crew), **9200** (LangGraph). Do not set `PORT` unless you mirror the container (`8080`).
 

@@ -6,37 +6,29 @@ import asyncio
 import logging
 import os
 import sys
+import warnings
 from typing import Any
 from uuid import uuid4
 
 import httpx
 from dotenv import load_dotenv
 
+# Suppress deprecation on import (A2AClient); must run before a2a imports.
+warnings.filterwarnings(
+    "ignore",
+    message=".*A2AClient is deprecated.*",
+    category=DeprecationWarning,
+)
+
+from a2a.client import A2ACardResolver, A2AClient  # noqa: E402
+from a2a.types import MessageSendParams, SendMessageRequest  # noqa: E402
+
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-warnings_shown = False
-
-
-def _filter_deprecation() -> None:
-    global warnings_shown
-    import warnings
-
-    if not warnings_shown:
-        warnings.filterwarnings(
-            "ignore",
-            message=".*A2AClient is deprecated.*",
-            category=DeprecationWarning,
-        )
-        warnings_shown = True
-
 
 async def main() -> None:
-    _filter_deprecation()
-    from a2a.client import A2ACardResolver, A2AClient
-    from a2a.types import MessageSendParams, SendMessageRequest
-
     base = os.environ.get("LANGGRAPH_A2A_PUBLIC_URL", "http://127.0.0.1:9200").rstrip(
         "/"
     )

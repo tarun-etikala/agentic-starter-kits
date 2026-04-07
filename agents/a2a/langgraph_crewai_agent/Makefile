@@ -4,13 +4,81 @@ CHART_DIR      := ../../../charts/a2a-langgraph-crewai
 VALUES_FILE    := values.yaml
 CONTAINER_CLI  := $(shell command -v podman 2>/dev/null || command -v docker 2>/dev/null)
 
-.PHONY: init build push deploy undeploy dry-run help
+.PHONY: init re-init env run-app run-app-fresh run-crew run-langgraph build push deploy undeploy dry-run help
 
 help: ## Show this help
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
+
+re-init: ## Activate venv and reload .env variables
+	@source .venv/bin/activate && set -a && source .env && set +a && \
+	  echo "Venv activated and .env variables loaded."
 
 init: ## Create .env from template.env if missing
 	@if [ ! -f .env ]; then cp template.env .env && echo "Created .env from template.env — edit it with your configuration"; else echo ".env already exists — skipping"; fi
+
+env: ## Create venv and install dependencies (uv sync)
+	@echo "==> Creating/syncing virtual environment (Python 3.12)..." && \
+	uv sync --python 3.12 && \
+	echo "" && \
+	echo "Done. Next: configure .env (make init), then make run-app"
+
+run-crew: ## Run CrewAI A2A server only (CREW_A2A_PORT, default 9100)
+	@[ -d .venv ] || { echo "ERROR: No .venv — run: make env  (or: uv venv --python 3.12 && uv sync)"; exit 1; }
+	@source .venv/bin/activate && set -a && source .env && set +a && \
+	CREW_PORT=$${CREW_A2A_PORT:-9100}; \
+	if command -v lsof >/dev/null 2>&1 && lsof -ti:$$CREW_PORT >/dev/null 2>&1; then \
+	  echo "ERROR: Port $$CREW_PORT is already in use. Change CREW_A2A_PORT or run: make run-app-fresh"; \
+	  exit 1; \
+	fi && \
+	uv run python -m a2a_langgraph_crewai.crew_a2a_server
+
+run-langgraph: ## Run LangGraph A2A server only (LANGGRAPH_A2A_PORT, default 9200)
+	@[ -d .venv ] || { echo "ERROR: No .venv — run: make env  (or: uv venv --python 3.12 && uv sync)"; exit 1; }
+	@source .venv/bin/activate && set -a && source .env && set +a && \
+	LG_PORT=$${LANGGRAPH_A2A_PORT:-9200}; \
+	if command -v lsof >/dev/null 2>&1 && lsof -ti:$$LG_PORT >/dev/null 2>&1; then \
+	  echo "ERROR: Port $$LG_PORT is already in use. Change LANGGRAPH_A2A_PORT or run: make run-app-fresh"; \
+	  exit 1; \
+	fi && \
+	uv run python -m a2a_langgraph_crewai.langgraph_a2a_server
+
+run-app: ## Run both A2A servers (Crew in background, LangGraph in foreground)
+	@[ -d .venv ] || { echo "ERROR: No .venv — run: make env  (or: uv venv --python 3.12 && uv sync)"; exit 1; }
+	@source .venv/bin/activate && set -a && source .env && set +a && \
+	CREW_PORT=$${CREW_A2A_PORT:-9100}; LG_PORT=$${LANGGRAPH_A2A_PORT:-9200}; \
+	if command -v lsof >/dev/null 2>&1; then \
+	  if lsof -ti:$$CREW_PORT >/dev/null 2>&1 || lsof -ti:$$LG_PORT >/dev/null 2>&1; then \
+	    echo "ERROR: Port $$CREW_PORT or $$LG_PORT is already in use." && \
+	    echo "  Change ports in .env or run: make run-app-fresh" && \
+	    exit 1; \
+	  fi; \
+	fi && \
+	echo "==> Starting Crew A2A on port $$CREW_PORT (background)..." && \
+	uv run python -m a2a_langgraph_crewai.crew_a2a_server & \
+	CREW_PID=$$! && \
+	trap 'kill $$CREW_PID 2>/dev/null; wait $$CREW_PID 2>/dev/null' EXIT INT TERM && \
+	for _ in $$(seq 1 90); do \
+	  (echo >/dev/tcp/127.0.0.1/$$CREW_PORT) 2>/dev/null && break; \
+	  if ! kill -0 $$CREW_PID 2>/dev/null; then \
+	    echo "ERROR: Crew server exited before binding port $$CREW_PORT"; exit 1; \
+	  fi; \
+	  sleep 0.2; \
+	done; \
+	(echo >/dev/tcp/127.0.0.1/$$CREW_PORT) 2>/dev/null || { \
+	  echo "ERROR: Crew did not listen on port $$CREW_PORT in time"; kill $$CREW_PID 2>/dev/null; exit 1; \
+	}; \
+	echo "==> Starting LangGraph A2A on port $$LG_PORT (foreground; Ctrl+C stops both)..." && \
+	uv run python -m a2a_langgraph_crewai.langgraph_a2a_server
+
+run-app-fresh: ## Free default A2A ports and run both servers (see run-app)
+	@[ -d .venv ] || { echo "ERROR: No .venv — run: make env  (or: uv venv --python 3.12 && uv sync)"; exit 1; }
+	@source .venv/bin/activate && set -a && source .env && set +a && \
+	CREW_PORT=$${CREW_A2A_PORT:-9100}; LG_PORT=$${LANGGRAPH_A2A_PORT:-9200}; \
+	echo "==> Killing processes on ports $$CREW_PORT and $$LG_PORT (if any)..." && \
+	(command -v lsof >/dev/null 2>&1 && lsof -ti:$$CREW_PORT | xargs kill -9 2>/dev/null); true && \
+	(command -v lsof >/dev/null 2>&1 && lsof -ti:$$LG_PORT | xargs kill -9 2>/dev/null); true && \
+	sleep 0.5 && \
+	$(MAKE) run-app
 
 _check-env:
 	@set -a && source .env 2>/dev/null && set +a; \
