@@ -85,7 +85,7 @@ def load_and_index_documents(
     )
 
     vector_store_id = (getenv("VECTOR_STORE_ID") or "").strip().strip("\"'") or None
-    provider_id = getenv("VECTOR_STORE_PROVIDER", "milvus")
+    provider_id = (getenv("VECTOR_STORE_PROVIDER") or "").strip() or "milvus"
     embedding_dimension = int(getenv("EMBEDDING_DIMENSION", "768"))
 
     if vector_store_id:
