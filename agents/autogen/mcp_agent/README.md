@@ -74,10 +74,10 @@ The agent connects to an MCP server at startup via `MCP_SERVER_URL`. The default
 local development:
 
 ```ini
-MCP_SERVER_URL=http://127.0.0.1:8000/sse
+MCP_SERVER_URL=http://127.0.0.1:8080/sse
 ```
 
-When deploying to OpenShift, `make deploy` automatically sets `MCP_SERVER_URL` to the in-cluster MCP service
+When deploying to OpenShift, `make deploy` uses the `MCP_SERVER_URL` from `values.yaml`
 (`http://mcp-automl:8080/sse`) unless you override it in `.env`.
 
 #### DNS Rebinding Protection
@@ -119,7 +119,7 @@ The MCP server must be running before the agent starts:
 make run-mcp
 ```
 
-This starts the MCP AutoML server on port 8000.
+This starts the MCP AutoML server on port 8080.
 
 #### Terminal 2 — Start agent
 
@@ -127,29 +127,27 @@ This starts the MCP AutoML server on port 8000.
 make run
 ```
 
-The agent starts on port 8080. Open [http://localhost:8080](http://localhost:8080) in your browser. A green dot in
+The agent starts on port 8000. Open [http://localhost:8000](http://localhost:8000) in your browser. A green dot in
 the header means the agent is connected and ready.
 
 The playground includes an **MCP tools** panel that shows which tools were invoked for the last reply, along with
-their arguments and results. You can also open [http://localhost:8080/docs](http://localhost:8080/docs) for the
+their arguments and results. You can also open [http://localhost:8000/docs](http://localhost:8000/docs) for the
 Swagger UI to explore and test the API interactively.
 
 #### Quick test
 
 ```bash
-curl -X POST http://localhost:8080/chat/completions \
+curl -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"message": "What is 2+7? Use a tool!"}'
 ```
 
 #### Interactive MCP chat (optional)
 
-You can also interact with the MCP tools directly (using LangGraph) from the `mcp_automl_template` directory:
+You can also interact with the MCP tools directly via a LangGraph agent (bypasses the AutoGen agent):
 
 ```bash
-cd mcp_automl_template
-# Set MCP_SERVER_URL in .env (or in agents/autogen/mcp_agent/.env)
-uv run python interact_with_mcp.py
+make interact-mcp
 ```
 
 ## Deploying to OpenShift
@@ -259,13 +257,13 @@ You can use either `"message": "..."` (shortcut) or `"messages": [...]` (OpenAI 
 #### Non-streaming
 
 ```bash
-curl -X POST http://localhost:8080/chat/completions \
+curl -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"message": "What is 17 + 25? Use your tools to compute it."}'
 ```
 
 ```bash
-curl -X POST http://localhost:8080/chat/completions \
+curl -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "Predict churn for this customer: Male, 12 months tenure, fiber optic, month-to-month contract, electronic check, monthly 70.35, total 800.40."}], "stream": false}'
 ```
@@ -276,7 +274,7 @@ Non-streaming responses include a `tool_invocations` array with each tool's `nam
 #### Streaming
 
 ```bash
-curl -sN -X POST http://localhost:8080/chat/completions \
+curl -sN -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "What is 2+2? Use a tool if needed."}], "stream": true}'
 ```
@@ -293,7 +291,7 @@ This is an extension to the OpenAI streaming protocol — clients can safely ign
 #### Pretty Printed Stream
 
 ```bash
-curl -sN -X POST http://localhost:8080/chat/completions \
+curl -sN -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "What is 17 + 25? Use your tools."}], "stream": true}' |
    jq -R -r -j --stream 'scan("^data:(.*)")[] | fromjson.choices[0].delta.content // empty'
@@ -302,7 +300,7 @@ curl -sN -X POST http://localhost:8080/chat/completions \
 ### GET /health
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:8000/health
 ```
 
 Returns `200` with `"status": "healthy"` when the MCP-backed agent is ready; `503` with `"status": "not_ready"`

@@ -4,7 +4,7 @@ CHART_DIR      := ../../../charts/agent
 VALUES_FILE    := values.yaml
 CONTAINER_CLI  := $(shell command -v podman 2>/dev/null || command -v docker 2>/dev/null)
 
-.PHONY: init run run-mcp build push build-openshift deploy deploy-mcp undeploy test dry-run help
+.PHONY: init run run-mcp interact-mcp build push build-openshift deploy deploy-mcp undeploy test dry-run help
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -12,14 +12,18 @@ help: ## Show this help
 init: ## Copy .env.example to .env for configuration
 	@if [ ! -f .env ]; then cp .env.example .env && echo "Created .env from .env.example — edit it with your configuration"; else echo ".env already exists — skipping"; fi
 
-run: ## Run agent locally with hot-reload (port 8080)
+run: ## Run agent locally with hot-reload (port 8000)
 	@set -a && source .env && set +a && \
-	  MCP_SERVER_URL="$${MCP_SERVER_URL:-http://127.0.0.1:8000/sse}" \
-	  uv run uvicorn main:app --host 127.0.0.1 --port $${PORT:-8080} --reload --reload-exclude .venv
+	  MCP_SERVER_URL="$${MCP_SERVER_URL:-http://127.0.0.1:8080/sse}" \
+	  uv run uvicorn main:app --host 127.0.0.1 --port $${PORT:-8000} --reload --reload-exclude .venv
 
-run-mcp: ## Start MCP AutoML server locally (port 8000)
+interact-mcp: ## Chat with MCP tools directly via LangGraph (no AutoGen agent)
 	@set -a && source .env && set +a && \
-	  cd mcp_automl_template && PORT=8000 uv run python mcp_server.py
+	  cd mcp_automl_template && uv run python interact_with_mcp.py
+
+run-mcp: ## Start MCP AutoML server locally (port 8080)
+	@set -a && source .env && set +a && \
+	  cd mcp_automl_template && PORT=8080 uv run python mcp_server.py
 
 build: ## Build container image locally (podman/docker)
 	@[ -n "$(CONTAINER_CLI)" ] || { echo "ERROR: neither podman nor docker found in PATH"; exit 1; } && \
@@ -46,7 +50,7 @@ build-openshift: ## Build image in-cluster via OpenShift BuildConfig (no podman/
 _check-env:
 	@set -a && source .env 2>/dev/null && set +a; \
 	  missing=""; \
-	  for var in $$(sed -n '/^ *required:/,/^ *optional:/{ /^ *- /s/^ *- *//p; }' agent.yaml); do \
+	  for var in $$(sed -n '/^ *required:/,/^ *[a-z]/{ /^ *- /s/^ *- *//p; }' agent.yaml); do \
 	    eval val="\$$$$var"; \
 	    [ -n "$$val" ] || missing="$$missing $$var"; \
 	  done; \
@@ -66,7 +70,7 @@ deploy: _check-env ## Deploy to OpenShift/K8s via Helm
 	    --set image.tag="$${IMAGE_TAG}" \
 	    --set env.BASE_URL="$${BASE_URL}" \
 	    --set env.MODEL_ID="$${MODEL_ID}" \
-	    --set env.MCP_SERVER_URL="$${MCP_SERVER_URL:-http://mcp-automl:8080/sse}" && \
+	    $${MCP_SERVER_URL:+--set env.MCP_SERVER_URL="$${MCP_SERVER_URL}"} && \
 	  if command -v oc >/dev/null 2>&1; then \
 	    echo "" && echo "Waiting for rollout to complete..." && \
 	    if oc rollout status deployment/$(AGENT_NAME) --timeout=120s; then \
@@ -93,7 +97,7 @@ dry-run: _check-env ## Render Helm templates without deploying
 	    --set image.tag="$${IMAGE_TAG}" \
 	    --set env.BASE_URL="$${BASE_URL}" \
 	    --set env.MODEL_ID="$${MODEL_ID}" \
-	    --set env.MCP_SERVER_URL="$${MCP_SERVER_URL:-http://mcp-automl:8080/sse}"
+	    $${MCP_SERVER_URL:+--set env.MCP_SERVER_URL="$${MCP_SERVER_URL}"}
 
 undeploy: ## Remove agent deployment from cluster (does NOT remove MCP server)
 	helm uninstall $(AGENT_NAME)
