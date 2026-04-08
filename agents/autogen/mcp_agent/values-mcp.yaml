@@ -1,6 +1,0 @@
-nameOverride: "mcp-automl"
-
-env:
-  DEPLOYMENT_URL: ""
-  DISABLE_DNS_REBINDING_PROTECTION: "false"
-  UVICORN_FORWARDED_ALLOW_IPS: "*"
