@@ -23,16 +23,25 @@ class FIFOMessageTrimmer(AgentMiddleware):
     def __init__(self, max_messages: int = 5):
         self.max_messages = max_messages
 
+    @staticmethod
+    def _drop_orphaned_tool_messages(messages):
+        """Remove leading tool messages that lost their preceding ai tool_calls."""
+        while messages and messages[0].type == "tool":
+            messages = messages[1:]
+        return messages
+
     def wrap_model_call(self, request, handler):
         messages = request.messages
         if len(messages) > self.max_messages:
             messages = messages[-self.max_messages :]
+            messages = self._drop_orphaned_tool_messages(messages)
         return handler(request.override(messages=messages))
 
     async def awrap_model_call(self, request, handler):
         messages = request.messages
         if len(messages) > self.max_messages:
             messages = messages[-self.max_messages :]
+            messages = self._drop_orphaned_tool_messages(messages)
         return await handler(request.override(messages=messages))
 
 

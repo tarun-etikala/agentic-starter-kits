@@ -1,9 +1,12 @@
 SHELL          := bash
-AGENT_NAME     := langgraph-agentic-rag
+AGENT_NAME     := $(shell python3 -c "import re; print(re.search(r'^name:\s*(.+)', open('agent.yaml').read(), re.M).group(1).strip())")
+CHART_DIR      := ../../../charts/agent
+VALUES_FILE    := values.yaml
 CONTAINER_CLI  := $(shell command -v podman 2>/dev/null || command -v docker 2>/dev/null)
 MODEL          ?= llama3.2:3b
 
 .PHONY: init re-init env ollama llama-server run-app run-app-fresh run-cli load-docs build push deploy undeploy test help
+.PHONY: init run run-cli build push build-openshift deploy undeploy test dry-run help
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -83,6 +86,7 @@ build: ## Build container image locally (podman/docker)
 	@[ -n "$(CONTAINER_CLI)" ] || { echo "ERROR: neither podman nor docker found in PATH"; exit 1; } && \
 	  source .env && \
 	  [ -n "$${CONTAINER_IMAGE}" ] || { echo "ERROR: CONTAINER_IMAGE is not set in .env"; exit 1; } && \
+	  rm -rf ./images && cp -r ../../../images ./images && trap 'rm -rf ./images' EXIT && \
 	  cp -r ../../../images ./images && trap 'rm -rf ./images' EXIT && \
 	  $(CONTAINER_CLI) build --platform linux/amd64 -t "$${CONTAINER_IMAGE}" -f Dockerfile .
 
@@ -92,13 +96,83 @@ push: ## Push container image to registry
 	  [ -n "$${CONTAINER_IMAGE}" ] || { echo "ERROR: CONTAINER_IMAGE is not set in .env"; exit 1; } && \
 	  $(CONTAINER_CLI) push "$${CONTAINER_IMAGE}"
 
-deploy: ## Deploy to OpenShift using deploy.sh
-	@chmod +x deploy.sh && ./deploy.sh
+build-openshift: ## Build image in-cluster via OpenShift BuildConfig (no podman/docker needed)
+	@rm -rf ./images && cp -r ../../../images ./images && trap 'rm -rf ./images' EXIT && \
+	  oc new-build --strategy=docker --binary --name=$(AGENT_NAME) --to=$(AGENT_NAME):latest 2>/dev/null || true && \
+	  oc start-build $(AGENT_NAME) --from-dir=. --follow && \
+	  NS=$$(oc project -q) && \
+	  echo "" && \
+	  echo "Image built. To deploy, set in .env:" && \
+	  echo "  CONTAINER_IMAGE=image-registry.openshift-image-registry.svc:5000/$$NS/$(AGENT_NAME):latest"
 
-undeploy: ## Remove deployment from OpenShift
-	@oc delete deployment,service,route -l app=$(AGENT_NAME) --ignore-not-found && \
-	  oc delete secret $(AGENT_NAME)-secrets --ignore-not-found && \
-	  echo "Deployment removed."
+_check-env:
+	@set -a && source .env 2>/dev/null && set +a; \
+	  missing=""; \
+	  for var in $$(sed -n '/^ *required:/,/^ *[a-z]/{ /^ *- /s/^ *- *//p; }' agent.yaml); do \
+	    eval val="\$$$$var"; \
+	    [ -n "$$val" ] || missing="$$missing $$var"; \
+	  done; \
+	  [ -z "$$missing" ] || { echo "ERROR: Missing required env vars:$$missing"; exit 1; }
+
+deploy: _check-env ## Deploy to OpenShift/K8s via Helm
+	@source .env && \
+	  [ -n "$${CONTAINER_IMAGE}" ] || { echo "ERROR: CONTAINER_IMAGE is not set in .env"; exit 1; } && \
+	  LAST_SEG="$${CONTAINER_IMAGE##*/}" && if [[ "$$LAST_SEG" == *:* ]]; then IMAGE_REPO="$${CONTAINER_IMAGE%:*}"; IMAGE_TAG="$${LAST_SEG##*:}"; else IMAGE_REPO="$${CONTAINER_IMAGE}"; IMAGE_TAG="latest"; fi && \
+	  trap 'rm -f .helm-secrets.yaml' EXIT && \
+	  umask 077 && \
+	  { printf 'secrets:\n  apiKey: "%s"\n' "$${API_KEY}"; \
+	    [ -z "$${MLFLOW_TRACKING_TOKEN}" ] || printf '  mlflowTrackingToken: "%s"\n' "$${MLFLOW_TRACKING_TOKEN}"; \
+	  } > .helm-secrets.yaml && \
+	  helm upgrade --install $(AGENT_NAME) $(CHART_DIR) \
+	    -f $(VALUES_FILE) \
+	    -f .helm-secrets.yaml \
+	    --set image.repository="$${IMAGE_REPO}" \
+	    --set image.tag="$${IMAGE_TAG}" \
+	    --set env.BASE_URL="$${BASE_URL}" \
+	    --set env.MODEL_ID="$${MODEL_ID}" \
+	    $${EMBEDDING_MODEL:+--set env.EMBEDDING_MODEL="$${EMBEDDING_MODEL}"} \
+	    $${EMBEDDING_DIMENSION:+--set env.EMBEDDING_DIMENSION="$${EMBEDDING_DIMENSION}"} \
+	    $${VECTOR_STORE_ID:+--set env.VECTOR_STORE_ID="$${VECTOR_STORE_ID}"} \
+	    $${VECTOR_STORE_PROVIDER:+--set env.VECTOR_STORE_PROVIDER="$${VECTOR_STORE_PROVIDER}"} \
+	    $${MLFLOW_TRACKING_URI:+--set env.MLFLOW_TRACKING_URI="$${MLFLOW_TRACKING_URI}"} \
+	    $${MLFLOW_EXPERIMENT_NAME:+--set env.MLFLOW_EXPERIMENT_NAME="$${MLFLOW_EXPERIMENT_NAME}"} \
+	    $${MLFLOW_TRACKING_INSECURE_TLS:+--set env.MLFLOW_TRACKING_INSECURE_TLS="$${MLFLOW_TRACKING_INSECURE_TLS}"} \
+	    $${MLFLOW_WORKSPACE:+--set env.MLFLOW_WORKSPACE="$${MLFLOW_WORKSPACE}"} && \
+	  if command -v oc >/dev/null 2>&1; then \
+	    echo "" && echo "Waiting for rollout to complete..." && \
+	    if oc rollout status deployment/$(AGENT_NAME) --timeout=120s; then \
+	      ROUTE=$$(oc get route $(AGENT_NAME) -o jsonpath='{.spec.host}' 2>/dev/null || true); \
+	      if [ -n "$$ROUTE" ]; then echo "" && echo "Agent is available at: https://$$ROUTE"; fi; \
+	    else \
+	      echo "" && echo "WARNING: Rollout did not complete successfully. Check pod status with:" && \
+	      echo "  oc get pods -l app.kubernetes.io/name=$(AGENT_NAME)" && \
+	      echo "  oc logs deployment/$(AGENT_NAME)"; \
+	    fi; \
+	  fi
+
+dry-run: _check-env ## Render Helm templates without deploying
+	@source .env && \
+	  [ -n "$${CONTAINER_IMAGE}" ] || { echo "ERROR: CONTAINER_IMAGE is not set in .env"; exit 1; } && \
+	  LAST_SEG="$${CONTAINER_IMAGE##*/}" && if [[ "$$LAST_SEG" == *:* ]]; then IMAGE_REPO="$${CONTAINER_IMAGE%:*}"; IMAGE_TAG="$${LAST_SEG##*:}"; else IMAGE_REPO="$${CONTAINER_IMAGE}"; IMAGE_TAG="latest"; fi && \
+	  helm template $(AGENT_NAME) $(CHART_DIR) \
+	    -f $(VALUES_FILE) \
+	    --set secrets.apiKey="REDACTED" \
+	    --set image.repository="$${IMAGE_REPO}" \
+	    --set image.tag="$${IMAGE_TAG}" \
+	    --set env.BASE_URL="$${BASE_URL}" \
+	    --set env.MODEL_ID="$${MODEL_ID}" \
+	    $${EMBEDDING_MODEL:+--set env.EMBEDDING_MODEL="$${EMBEDDING_MODEL}"} \
+	    $${EMBEDDING_DIMENSION:+--set env.EMBEDDING_DIMENSION="$${EMBEDDING_DIMENSION}"} \
+	    $${VECTOR_STORE_ID:+--set env.VECTOR_STORE_ID="$${VECTOR_STORE_ID}"} \
+	    $${VECTOR_STORE_PROVIDER:+--set env.VECTOR_STORE_PROVIDER="$${VECTOR_STORE_PROVIDER}"} \
+	    $${MLFLOW_TRACKING_URI:+--set env.MLFLOW_TRACKING_URI="$${MLFLOW_TRACKING_URI}"} \
+	    $${MLFLOW_TRACKING_TOKEN:+--set secrets.mlflowTrackingToken="REDACTED"} \
+	    $${MLFLOW_EXPERIMENT_NAME:+--set env.MLFLOW_EXPERIMENT_NAME="$${MLFLOW_EXPERIMENT_NAME}"} \
+	    $${MLFLOW_TRACKING_INSECURE_TLS:+--set env.MLFLOW_TRACKING_INSECURE_TLS="$${MLFLOW_TRACKING_INSECURE_TLS}"} \
+	    $${MLFLOW_WORKSPACE:+--set env.MLFLOW_WORKSPACE="$${MLFLOW_WORKSPACE}"}
+
+undeploy: ## Remove deployment from cluster
+	helm uninstall $(AGENT_NAME)
 
 test: ## Run tests
 	uv run --extra dev python -m pytest tests/
