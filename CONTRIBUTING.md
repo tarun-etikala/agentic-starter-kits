@@ -43,6 +43,105 @@ chore: bump python-dotenv in requirements
 
 This is optional but appreciated; maintainers may ask you to reword commits when preparing a release.
 
+## Adding MLflow tracing to your agent template
+
+All agent templates in this repo must include MLflow tracing integration. Tracing lets users optionally capture LLM calls, tool executions, and agent orchestration spans in MLflow — it's opt-in via the `MLFLOW_TRACKING_URI` environment variable and must never prevent the agent from starting if MLflow is unavailable.
+
+Read [tracing.md](tracing.md) for the full tracing architecture, design principles, and how the existing agents integrate with MLflow. In particular, see the [Autolog Coverage Levels](tracing.md#autolog-coverage-levels) section — the amount of work required depends on whether your framework is Level A (full autolog), B (partial), or C (no framework autolog).
+
+### What you need to do
+
+These are the files you need to create or update when adding tracing to your agent:
+
+**1. Create `src/<package>/tracing.py`**
+
+This module exports `enable_tracing()` (and `wrap_func_with_mlflow_trace()` if your framework's autolog doesn't cover everything). It handles health-checking the MLflow server with retry logic, configuring the experiment, enabling the correct autolog for your framework, and gracefully degrading if the server is unreachable. All MLflow imports must be lazy (inside functions, not at module top) so the agent starts cleanly without MLflow installed.
+
+See existing examples:
+- Full autolog (no manual wrapping needed): `agents/langgraph/react_agent/src/react_agent/tracing.py`
+- Partial autolog (tools need manual wrapping): `agents/crewai/websearch_agent/src/crewai_web_search/tracing.py`
+- No framework autolog (tools + agent entry point need manual wrapping): `agents/vanilla_python/openai_responses_agent/src/openai_responses_agent/tracing.py`
+
+**2. Edit `main.py`**
+
+Import `enable_tracing` and call it as the **first line** inside your `lifespan()` function, before any agent initialization. If your framework needs manual wrapping, also import `wrap_func_with_mlflow_trace` and wrap tool functions (`span_type="tool"`) and the agent entry point (`span_type="agent"`) — in both the streaming and non-streaming code paths.
+
+**3. Edit `.env.example`**
+
+Add commented-out MLflow environment variable sections for both local and OpenShift deployment (see any existing agent's `.env.example` for the format).
+
+**4. Edit `README.md`**
+
+Add tracing configuration examples (local and OpenShift), the `uv pip install "mlflow>=3.10.0"` install step (marked as optional), and the `mlflow server --port 5000` start step.
+
+**5. Do not add MLflow to `pyproject.toml`**
+
+MLflow is installed manually by the user, not listed as a package dependency. This is because two different MLflow builds are used depending on the environment:
+
+- **Local development:** upstream MLflow (`uv pip install "mlflow>=3.10.0"`)
+- **RHOAI (Red Hat OpenAI):** Red Hat's own build (`uv pip install "git+https://github.com/red-hat-data-services/mlflow@rhoai-3.3"`)
+
+The RHOAI build is not yet compatible with the upstream package, so both install paths must be supported. Listing MLflow in `pyproject.toml` would force one build and break the other. Instead, the README documents both install commands and users choose the one that matches their environment.
+
+### Using the `integrate-tracing` Claude Code skill
+
+If you have [Claude Code](https://docs.anthropic.com/en/docs/claude-code) set up, this repo includes a skill that automates the entire process described above.
+
+#### Prerequisites
+
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and configured
+- Run Claude Code from the repo root so it discovers the skills in `.claude/skills/`
+
+#### Running the full integration
+
+```
+/project:integrate-tracing <framework> <agent_path>
+```
+
+For example:
+
+```
+/project:integrate-tracing autogen agents/autogen/chat_agent
+```
+
+You can also prompt Claude Code directly (e.g., "integrate tracing into the autogen chat agent using the `/project:integrate-tracing` skill") and it will follow the same workflow.
+
+This single command runs the entire pipeline end-to-end. The skill always creates a demo copy of the agent first, implements and verifies tracing on the demo, and only applies the changes to the actual agent template once everything works correctly.
+
+1. Researches your framework's MLflow autolog support and classifies it (Level A/B/C)
+2. Creates a demo copy of the agent with test tools for trace verification
+3. Reads the agent's code to understand its architecture
+4. Creates `tracing.py` with the correct pattern for the autolog level
+5. Wires `enable_tracing()` into the FastAPI lifespan in `main.py`
+6. Adds manual trace wrapping for tools and agent entry points (skipped if autolog covers everything)
+7. Verifies traces end-to-end — code review + live testing against the MLflow API
+8. Updates `.env.example` with MLflow environment variables
+9. Updates `README.md` with tracing configuration and install steps
+
+#### Running individual sub-skills
+
+Each step of the pipeline is also available as a standalone skill. This is useful if you want to run just one phase, re-run a step after a fix, or integrate tracing manually with some automation:
+
+```
+/project:check-autolog-support <framework>         # Research MLflow autolog support for a framework
+/project:create-tracing-module <agent_path>         # Create tracing.py only
+/project:wire-into-lifespan <agent_path>            # Wire tracing into main.py only
+/project:add-manual-tracing <agent_path>            # Add manual trace wrapping only
+/project:verify-traces <agent_path>                 # Run code review + live trace testing
+/project:review-tracing-code <agent_path>           # Code review only (no live testing)
+/project:test-tracing <agent_path>                  # Live trace testing only (no code review)
+```
+
+#### How the skill system works
+
+`integrate-tracing` is an orchestrator — it doesn't contain all the logic itself. Instead, it coordinates 7 specialized sub-skills in sequence, passing context between them. The most important piece of context is the **autolog level** (A, B, or C), which is determined in Step 1 by `check-autolog-support` and drives every decision downstream: what code `create-tracing-module` generates, what `wire-into-lifespan` imports, whether `add-manual-tracing` runs at all, and what spans `verify-traces` expects to find.
+
+`verify-traces` is itself a sub-orchestrator — it calls `review-tracing-code` (static analysis) and `test-tracing` (live end-to-end testing) and combines their results into a single report. If verification fails, the report points back to which step to revisit.
+
+All skills live as siblings in `.claude/skills/` (not nested under `integrate-tracing/`) because Claude Code discovers skills by scanning `.claude/skills/*/SKILL.md`. The flat structure also makes each sub-skill independently callable. If you need to maintain or extend a skill, edit the `SKILL.md` file in its directory. Each skill includes a self-update instruction — if Claude deviates from a skill's steps because they were inaccurate, it updates the skill file automatically so the next run benefits.
+
+**Recommended model:** These skills were developed and tested with `claude-opus-4-6`. Use Opus for best results — smaller models may not follow the multi-step orchestration reliably.
+
 ## Questions?
 
 See the main [README](README.md) or open an issue. You can also contact [wrebisz@redhat.com](mailto:wrebisz@redhat.com) or [tguzik@redhat.com](mailto:tguzik@redhat.com).
