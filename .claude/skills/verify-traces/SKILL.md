@@ -9,7 +9,7 @@ You are verifying that MLflow tracing works correctly after integrating it into 
 
 You need:
 1. **Agent path**: The agent directory (e.g., `agents/autogen/chat_agent/`)
-2. **Coverage level**: A, B, or C (from the autolog support report)
+2. **Coverage level**: A, B, or C — if not provided, determine it by reading the agent's `tracing.py`. If it has `wrap_func_with_mlflow_trace()` and a framework autolog, it's Level B. If it has `wrap_func_with_mlflow_trace()` but no framework autolog, it's Level C. If it has neither, it's Level A.
 
 ## Important
 
@@ -38,7 +38,7 @@ Do not skip any of these steps or ask the user to do them.
 
 Combine the outputs from both steps into a single verification report:
 
-```
+```text
 ## Tracing Verification Report: <agent_name>
 
 ### Code Review

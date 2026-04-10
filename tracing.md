@@ -89,7 +89,7 @@ Polls `{mlflow_tracking_uri}/health` with retry logic. Raises `RuntimeError` if 
 
 ### Startup Flow
 
-```
+```text
 FastAPI lifespan start
   |
   v
@@ -329,7 +329,7 @@ MLFLOW_WORKSPACE="default"
 
 Every agent's traces consist of up to three layers. Which layers are present depends on the framework:
 
-```
+```text
 +--------------------------------------------------+
 |  Layer 3: Agent Orchestration                     |
 |  (Agent loop, Tasks, Crew)                        |

@@ -46,7 +46,7 @@ Wrap each tool so its execution creates a TOOL span. The wrapping location depen
 
 **If tools are functions registered by name (common in Level C):**
 
-In `agent.py` or wherever tools are registered:
+In `agent.py` or wherever tools are registered (e.g., `from openai_responses_agent.tracing import wrap_func_with_mlflow_trace`):
 ```python
 from <package>.tracing import wrap_func_with_mlflow_trace
 
@@ -58,7 +58,7 @@ for name, func in self._tools:
 
 **If tools are class instances with a `_run` method (common in Level B, e.g., CrewAI):**
 
-In the file where tool objects are created (e.g., `crew.py`):
+In the file where tool objects are created, e.g., `crew.py` (e.g., `from crewai_web_search.tracing import wrap_func_with_mlflow_trace`):
 ```python
 from <package>.tracing import wrap_func_with_mlflow_trace
 
@@ -71,6 +71,8 @@ for tool in tools:
 
 Wrap the underlying function after the agent is assembled:
 ```python
+from <package>.tracing import wrap_func_with_mlflow_trace
+
 for tool in agent.tools:
     tool.func = wrap_func_with_mlflow_trace(tool.func, span_type="tool")
 ```

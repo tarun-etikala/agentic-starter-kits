@@ -45,7 +45,7 @@ This is optional but appreciated; maintainers may ask you to reword commits when
 
 ## Adding MLflow tracing to your agent template
 
-All agent templates in this repo must include MLflow tracing integration. Tracing lets users optionally capture LLM calls, tool executions, and agent orchestration spans in MLflow — it's opt-in via the `MLFLOW_TRACKING_URI` environment variable and must never prevent the agent from starting if MLflow is unavailable.
+All agent templates in this repo must include MLflow tracing integration. Tracing lets users optionally capture LLM calls, tool executions, and agent orchestration spans in MLflow — it's opt-in via the `MLFLOW_TRACKING_URI` environment variable. If `MLFLOW_TRACKING_URI` is set but the server is unreachable, the agent logs a warning and continues without tracing. Note: if `MLFLOW_TRACKING_URI` is set but the MLflow package is not installed, the agent will fail at startup with an `ImportError` — MLflow must be installed when the env var is set.
 
 Read [tracing.md](tracing.md) for the full tracing architecture, design principles, and how the existing agents integrate with MLflow. In particular, see the [Autolog Coverage Levels](tracing.md#autolog-coverage-levels) section — the amount of work required depends on whether your framework is Level A (full autolog), B (partial), or C (no framework autolog).
 

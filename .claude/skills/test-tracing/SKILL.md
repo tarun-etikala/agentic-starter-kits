@@ -72,7 +72,7 @@ Confirm `BASE_URL` and `MODEL_ID` are also set in `.env`.
 Check if an MLflow server is already running:
 
 ```bash
-curl -s http://localhost:5000/health
+curl -s http://localhost:<MLFLOW_PORT>/health
 ```
 
 If not running, start one. Try port 5000 first; if occupied, increment:
@@ -87,7 +87,9 @@ If port 5000 is occupied:
 mlflow server --port 5001
 ```
 
-Keep incrementing until you find an open port. Record the port and make sure `MLFLOW_TRACKING_URI` in the agent's `.env` matches (e.g., `http://localhost:5001`).
+Keep incrementing until you find an open port. Record the port as `<MLFLOW_PORT>` and make sure `MLFLOW_TRACKING_URI` in the agent's `.env` matches (e.g., `http://localhost:5001`).
+
+**Use `http://localhost:<MLFLOW_PORT>` consistently for ALL MLflow API calls below.** Do not hardcode port 5000 — always use the actual port the server is running on.
 
 **The MLflow server must keep running in the background.** Tell the user to keep that terminal open, or run it in the background.
 
@@ -120,13 +122,13 @@ Check the agent's startup logs for the `[Tracing Enabled]` message confirming ML
 Get the experiment ID first so you can track trace counts before and after test requests.
 
 ```bash
-curl -s "http://localhost:5000/api/2.0/mlflow/experiments/get-by-name?experiment_name=<EXPERIMENT_NAME>" | python3 -m json.tool
+curl -s "http://localhost:<MLFLOW_PORT>/api/2.0/mlflow/experiments/get-by-name?experiment_name=<EXPERIMENT_NAME>" | python3 -m json.tool
 ```
 
 Extract the `experiment_id` from the response. Then record how many traces exist before testing:
 
 ```bash
-curl -s "http://localhost:5000/api/2.0/mlflow/traces?experiment_ids=<EXPERIMENT_ID>&max_results=0" | python3 -c "
+curl -s "http://localhost:<MLFLOW_PORT>/api/2.0/mlflow/traces?experiment_ids=<EXPERIMENT_ID>&max_results=0" | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
 print('Traces before test:', len(data.get('traces', [])))
@@ -135,7 +137,7 @@ print('Traces before test:', len(data.get('traces', [])))
 
 If the experiment doesn't exist yet (first run), the baseline is 0.
 
-## Step 4: Send a test request (non-streaming)
+## Step 6: Send a test request (non-streaming)
 
 Craft a message based on the agent's tools. The message should trigger at least one tool call so you can verify tool spans.
 
@@ -147,10 +149,10 @@ curl -s -X POST http://localhost:<PORT>/chat/completions \
 
 Verify the response has a valid `chat.completion` structure with an assistant message.
 
-## Step 5: Verify exactly 1 new trace from non-streaming request
+## Step 7: Verify exactly 1 new trace from non-streaming request
 
 ```bash
-curl -s "http://localhost:5000/api/2.0/mlflow/traces?experiment_ids=<EXPERIMENT_ID>&max_results=5" | python3 -c "
+curl -s "http://localhost:<MLFLOW_PORT>/api/2.0/mlflow/traces?experiment_ids=<EXPERIMENT_ID>&max_results=5" | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
 traces = data.get('traces', [])
@@ -163,7 +165,7 @@ Compare with the baseline from Step 3. Exactly **1 new trace** should have appea
 
 Record the non-streaming trace's `request_id`.
 
-## Step 6: Send a test request (streaming)
+## Step 8: Send a test request (streaming)
 
 ```bash
 curl -s -X POST http://localhost:<PORT>/chat/completions \
@@ -173,10 +175,10 @@ curl -s -X POST http://localhost:<PORT>/chat/completions \
 
 Verify SSE chunks arrive with `chat.completion.chunk` objects, ending with `data: [DONE]`.
 
-## Step 7: Verify exactly 1 new trace from streaming request
+## Step 9: Verify exactly 1 new trace from streaming request
 
 ```bash
-curl -s "http://localhost:5000/api/2.0/mlflow/traces?experiment_ids=<EXPERIMENT_ID>&max_results=5" | python3 -c "
+curl -s "http://localhost:<MLFLOW_PORT>/api/2.0/mlflow/traces?experiment_ids=<EXPERIMENT_ID>&max_results=5" | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
 traces = data.get('traces', [])
@@ -189,7 +191,7 @@ Exactly **1 more trace** should have appeared since Step 5. If more, streaming i
 
 Record the streaming trace's `request_id`.
 
-## Step 8: Inspect spans for both traces
+## Step 10: Inspect spans for both traces
 
 For each trace (non-streaming and streaming), inspect the individual spans.
 
@@ -203,7 +205,7 @@ If MLflow is available, inspect spans using the Python SDK:
 
 ```python
 import mlflow
-mlflow.set_tracking_uri("http://localhost:5000")
+mlflow.set_tracking_uri("http://localhost:<MLFLOW_PORT>")
 
 for label, trace_id in [("Non-streaming", "<non_streaming_trace_id>"), ("Streaming", "<streaming_trace_id>")]:
     print(f"\n{label} trace: {trace_id}")
@@ -215,7 +217,7 @@ for label, trace_id in [("Non-streaming", "<non_streaming_trace_id>"), ("Streami
 If MLflow is not installed in the current env, use the REST API as a fallback:
 
 ```bash
-curl -s "http://localhost:5000/api/2.0/mlflow/traces/<TRACE_ID>/spans" | python3 -c "
+curl -s "http://localhost:<MLFLOW_PORT>/api/2.0/mlflow/traces/<TRACE_ID>/spans" | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
 for span in data.get('spans', []):
@@ -223,7 +225,7 @@ for span in data.get('spans', []):
 "
 ```
 
-## Step 9: Compare streaming and non-streaming traces
+## Step 11: Compare streaming and non-streaming traces
 
 Both traces should have the **same span structure** — same span types and roughly the same span names. Compare:
 
@@ -233,7 +235,7 @@ Both traces should have the **same span structure** — same span types and roug
 
 If streaming has fewer spans or is missing tool/agent spans, the streaming path is not properly traced — see the `add-manual-tracing` skill.
 
-## Step 10: Validate the spans
+## Step 12: Validate the spans
 
 Check the span output against expected patterns for the agent's coverage level:
 
@@ -270,7 +272,7 @@ Expected span types:
 
 Report the results:
 
-```
+```text
 ## Tracing Test Report: <agent_name>
 
 **MLflow URL**: <mlflow_url>
