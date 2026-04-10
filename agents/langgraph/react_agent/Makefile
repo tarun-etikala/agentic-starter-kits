@@ -3,6 +3,7 @@ AGENT_NAME     := $(shell python3 -c "import re; print(re.search(r'^name:\s*(.+)
 CHART_DIR      := ../../../charts/agent
 VALUES_FILE    := values.yaml
 CONTAINER_CLI  := $(shell command -v podman 2>/dev/null || command -v docker 2>/dev/null)
+TRACING_EXTRA  ?= tracing
 
 .PHONY: init run run-cli build push build-openshift deploy undeploy test dry-run help
 
@@ -14,18 +15,18 @@ init: ## Copy .env.example to .env for configuration
 
 run: ## Run agent locally with hot-reload
 	@set -a && source .env && set +a && \
-	  uv run $${MLFLOW_TRACKING_URI:+--extra tracing} uvicorn main:app --host 127.0.0.1 --port $${PORT:-8000} --reload --reload-exclude .venv
+	  uv run $${MLFLOW_TRACKING_URI:+--extra $(TRACING_EXTRA)} uvicorn main:app --host 127.0.0.1 --port $${PORT:-8000} --reload --reload-exclude .venv
 
 run-cli: ## Run interactive CLI chat (no web server)
 	@set -a && source .env && set +a && \
-	  cd examples && uv run $${MLFLOW_TRACKING_URI:+--extra tracing} python execute_ai_service_locally.py
+	  cd examples && uv run $${MLFLOW_TRACKING_URI:+--extra $(TRACING_EXTRA)} python execute_ai_service_locally.py
 
 build: ## Build container image locally (podman/docker)
 	@[ -n "$(CONTAINER_CLI)" ] || { echo "ERROR: neither podman nor docker found in PATH"; exit 1; } && \
 	  source .env && \
 	  [ -n "$${CONTAINER_IMAGE}" ] || { echo "ERROR: CONTAINER_IMAGE is not set in .env"; exit 1; } && \
 	  cp -r ../../../images ./images && trap 'rm -rf ./images' EXIT && \
-	  $(CONTAINER_CLI) build --platform linux/amd64 -t "$${CONTAINER_IMAGE}" -f Dockerfile .
+	  $(CONTAINER_CLI) build --platform linux/amd64 --build-arg TRACING_EXTRA=$(TRACING_EXTRA) -t "$${CONTAINER_IMAGE}" -f Dockerfile .
 
 push: ## Push container image to registry
 	@[ -n "$(CONTAINER_CLI)" ] || { echo "ERROR: neither podman nor docker found in PATH"; exit 1; } && \
@@ -36,7 +37,7 @@ push: ## Push container image to registry
 build-openshift: ## Build image in-cluster via OpenShift BuildConfig (no podman/docker needed)
 	@cp -r ../../../images ./images && trap 'rm -rf ./images' EXIT && \
 	  oc new-build --strategy=docker --binary --name=$(AGENT_NAME) --to=$(AGENT_NAME):latest 2>/dev/null || true && \
-	  oc start-build $(AGENT_NAME) --from-dir=. --follow && \
+	  oc start-build $(AGENT_NAME) --from-dir=. --build-arg=TRACING_EXTRA=$(TRACING_EXTRA) --follow && \
 	  NS=$$(oc project -q) && \
 	  echo "" && \
 	  echo "Image built. To deploy, set in .env:" && \

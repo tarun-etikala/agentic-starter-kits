@@ -17,8 +17,10 @@ COPY pyproject.toml .
 COPY src/ ./src/
 
 # Install the project and its dependencies using uv
+# TRACING_EXTRA: "tracing" (default, RHOAI 3.4+) or "tracing-rhoai-33" (RHOAI 3.2/3.3)
 # pysqlite3-binary (installed inline) provides SQLite >= 3.35 for ChromaDB on UBI9
-RUN uv pip install --no-cache ".[tracing]" pysqlite3-binary \
+ARG TRACING_EXTRA=tracing
+RUN uv pip install --no-cache ".[$TRACING_EXTRA]" pysqlite3-binary \
     && SITE=$(python3 -c "import site; print(site.getsitepackages()[0])") \
     && printf '__import__("pysqlite3")\nimport sys\nsys.modules["sqlite3"] = sys.modules.pop("pysqlite3")\n' > "$SITE/sitecustomize.py"
 

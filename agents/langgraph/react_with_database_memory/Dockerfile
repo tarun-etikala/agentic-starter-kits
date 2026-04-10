@@ -17,7 +17,9 @@ COPY pyproject.toml .
 COPY src/ ./src/
 
 # Install the project and its dependencies using uv
-RUN uv pip install --no-cache ".[tracing]"
+# TRACING_EXTRA: "tracing" (default, RHOAI 3.4+) or "tracing-rhoai-33" (RHOAI 3.2/3.3)
+ARG TRACING_EXTRA=tracing
+RUN uv pip install --no-cache ".[$TRACING_EXTRA]"
 
 # Copy the application entrypoint, playground UI, and images
 COPY main.py .

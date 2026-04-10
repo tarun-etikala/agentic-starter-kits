@@ -35,6 +35,9 @@ dependencies = [
 tracing = [
     "mlflow>=3.10.0",
 ]
+tracing-rhoai-33 = [
+    "mlflow @ git+https://github.com/red-hat-data-services/mlflow@rhoai-3.3",
+]
 dev = [
     "pytest>=9.0.2",
 ]

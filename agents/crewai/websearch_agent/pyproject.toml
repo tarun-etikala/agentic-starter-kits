@@ -22,6 +22,9 @@ dev = [
 tracing = [
     "mlflow>=3.10.0",
 ]
+tracing-rhoai-33 = [
+    "mlflow @ git+https://github.com/red-hat-data-services/mlflow@rhoai-3.3",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
