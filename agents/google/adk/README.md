@@ -30,7 +30,7 @@ connector to route inference through a LlamaStack server's OpenAI-compatible API
 
 #### Initiating base
 
-Here you copy .env.template file into .env
+Here you copy .env.example file into .env
 
 ```bash
 cd agents/google/adk

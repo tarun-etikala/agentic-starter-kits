@@ -54,8 +54,13 @@ ollama: ## Install Ollama, start it, and pull models
 	  echo "Done. Run 'make llama-server' to start the Llama Stack server."
 
 llama-server: ## Install llama-stack and start Llama Stack server
-	@echo "==> Installing llama-stack..." && \
-	  pip install "llama-stack==0.5.0" "llama-stack-api==0.5.0" ollama && \
+	@if [ ! -d .venv ]; then \
+	  echo "==> Creating virtual environment..." && \
+	  uv venv .venv --python 3.12; \
+	fi && \
+	source .venv/bin/activate && \
+	  echo "==> Installing llama-stack..." && \
+	  uv pip install "llama-stack==0.5.0" "llama-stack-api==0.5.0" ollama && \
 	  echo "==> Killing any existing process on port 8321..." && \
 	  lsof -ti:8321 | xargs kill -9 2>/dev/null; true && \
 	  echo "==> Starting Llama Stack server on port 8321..." && \

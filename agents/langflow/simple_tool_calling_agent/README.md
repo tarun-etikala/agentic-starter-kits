@@ -26,7 +26,8 @@ national park data) and reasons over the results to answer user questions. Inclu
 | NPS Park Alerts     | NPS API    | Active alerts and closures for a park                  |
 
 > **Note:** Unlike other agents in this repo, Langflow agents do not deploy a custom container. The "agent" is a JSON
-> flow definition imported into an existing Langflow instance. There is no Dockerfile, Helm chart, or FastAPI application.
+> flow definition imported into an existing Langflow instance. There is no Dockerfile, Helm chart, or FastAPI
+> application.
 
 ---
 
@@ -53,7 +54,7 @@ podman machine start            # start the VM
 
 ```bash
 sudo dnf install -y podman      # install podman runtime
-pip install podman-compose      # install compose plugin
+uv pip install podman-compose   # install compose plugin
 sudo systemctl start podman     # start the podman service
 ```
 
@@ -202,7 +203,7 @@ oc get inferenceservice --all-namespaces
     - **KServe vLLM**: set `api_base` and `model_name`. You can connect through LlamaStack or directly to KServe:
 
       | Option | api_base | model_name |
-           |--------|----------|------------|
+            |--------|----------|------------|
       | Via LlamaStack (external route) | https://\<llamastack-route-host\>/v1 | vllm//mnt/models |
       | Via LlamaStack (internal) | http://llamastack-service.\<namespace\>.svc.cluster.local:8321/v1 | vllm//mnt/models |
       | Direct to KServe (internal) | http://\<model\>-predictor.\<namespace\>.svc.cluster.local:8080/v1 | /mnt/models |
