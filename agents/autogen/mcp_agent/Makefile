@@ -107,7 +107,10 @@ deploy-mcp: ## Build MCP AutoML server in-cluster and deploy via Helm
 	  fi
 
 undeploy-mcp: ## Remove MCP AutoML server from cluster
-	helm uninstall mcp-automl
+	@helm uninstall mcp-automl || true
+	@if command -v oc >/dev/null 2>&1; then \
+	  oc delete buildconfig/mcp-automl imagestream/mcp-automl --ignore-not-found=true; \
+	fi
 
 dry-run-mcp: ## Preview MCP AutoML server Helm templates
 	@source .env 2>/dev/null || true && \
