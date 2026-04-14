@@ -1,152 +1,71 @@
 # Agentic Starter Kits
 
-Collection of production-ready LLM agent templates for Red Hat OpenShift, spanning multiple frameworks (LangGraph, LlamaIndex, CrewAI, AutoGen, Langflow, Google ADK, and more). See `agents/` for the full list. Most agents share a common FastAPI API contract and Helm-based deployment; see [Non-standard agents](#non-standard-agents) for exceptions.
+Collection of production-ready LLM agent templates for Red Hat OpenShift (LangGraph, LlamaIndex, CrewAI, AutoGen, Langflow, Google ADK, and more). See `agents/` for the full list. Most agents share a common FastAPI API contract and Helm-based deployment; see [Non-standard agents](#non-standard-agents) for exceptions.
 
-## Quick reference
+## Structure
 
-Standard Makefile targets (available in most agents — see [Non-standard agents](#non-standard-agents) for exceptions):
+- `agents/<framework>/<agent_name>/` - self-contained agents (Makefile, Dockerfile, pyproject.toml, src/, tests/)
+- `charts/agent/` - shared Helm chart for all standard agents
+- `charts/a2a-langgraph-crewai/` - specialized chart for multi-agent setup
+- `docs/` - guides for local dev, deployment, and adding new agents
+
+## Commands
 
 ```bash
-# Run from any agent directory (e.g., agents/langgraph/react_agent/)
-make init          # create .env from .env.example
-make env           # create venv + install deps with uv
-make run-app       # start FastAPI dev server on PORT (default 8000)
-make test          # run pytest
-make dry-run       # preview Helm manifests without deploying
-make build         # build container image locally (podman/docker)
-make push          # pushes to the registry specified in CONTAINER_IMAGE
-make deploy        # deploy to OpenShift/K8s via Helm
+# Run from any standard agent directory (e.g., agents/langgraph/react_agent/)
+make init       # create .env from .env.example
+make env        # create venv + install deps with uv
+make run-app    # start FastAPI dev server (port 8000)
+make test       # run pytest
+make build      # build container image (podman/docker)
+make push       # pushes to the registry specified in CONTAINER_IMAGE
+make deploy     # deploy to OpenShift/K8s via Helm
+make dry-run    # preview Helm manifests
 ```
-
-## Project structure
-
-- `agents/<framework>/<agent_name>/` — each agent is self-contained with its own Makefile, Dockerfile, pyproject.toml, and source code
-- `charts/agent/` — shared Helm chart used by all standard agents
-- `charts/a2a-langgraph-crewai/` — specialized chart for multi-agent setup
-- `docs/` — guides for local dev, OpenShift deployment, and adding new agents
 
 ## Code style
 
-- Python >=3.12, <3.14 required
-- Use `uv` as the package manager — never use `pip` directly
+- Python >=3.12, <3.14. Use `uv` as package manager -- never `pip` directly
 - FastAPI for all web endpoints
-- All agents must expose `POST /chat/completions` (JSON + SSE streaming) and `GET /health`
-- Source code lives in `src/<agent_name>/` within each agent directory
-- Keep agent implementations self-contained — never import from another agent's `src/` directory
+- All agents must expose `POST /chat/completions` (JSON + SSE) and `GET /health`
+- Source code in `src/<agent_name>/` within each agent directory
+- Keep agents self-contained -- never import from another agent's `src/`
 
 ## Workflow
 
-- When modifying an agent, `cd` into its directory first — Makefiles use relative paths and read `agent.yaml` at runtime
-- Reference `agent.yaml` to discover required env vars before editing `.env.example`
-- Prefer `make test` over running pytest directly to ensure correct environment setup
-- After editing Dockerfiles, verify the build with `make build` when possible
-- For cross-agent investigations, use parallel or subagent workflows to keep context clean
-- If an agent has no tests (empty `tests/` or no `test` target), note it — don't fabricate a passing result
+- `cd` into the agent directory first -- Makefiles use relative paths and read `agent.yaml` at runtime
+- Check `agent.yaml` to discover required env vars before editing `.env.example`
+- Run `make test` before committing (prefer over bare pytest). Some agents have placeholder tests only -- check before assuming coverage
+- Never commit `.env` files -- only `.env.example` templates
+- Standard containers: UBI9 base (`registry.access.redhat.com/ubi9/python-312`), non-root UID 1001, port 8080
 
 ## Boundaries
 
-- Don't modify `charts/agent/` templates unless the change is explicitly requested
+- Don't modify `charts/agent/` templates unless explicitly requested
 - Don't modify CONTRIBUTING.md, CI config, or root Makefile without asking
-- When working on one agent, don't refactor other agents
+- Don't refactor other agents when working on one agent
 - Don't change the API contract (`POST /chat/completions`, `GET /health`) without discussion
-- When unsure if an agent follows the standard pattern, check its Makefile and Dockerfile first
-
-## Commit conventions
-
-See CONTRIBUTING.md for full details. Conventional Commits encouraged:
-
-- `feat:` new feature, `fix:` bug fix, `docs:` documentation, `test:` tests, `chore:` maintenance, `perf:` performance
-- Scope is optional: `feat(react-agent): add tool retry logic`
-- One feature or fix per PR
-
-## Git workflow
-
-- Fork model: `origin` = personal fork, `upstream` = `red-hat-data-services/agentic-starter-kits`
-- Direct push model: if you have repo access, `origin` is the main repo — no `upstream` needed
-- Branch naming: `feat/<description>`, `fix/<description>`
-- Always fetch the latest main before rebasing: `git fetch upstream main` (fork) or `git fetch origin main` (direct)
-
-## Container conventions (standard agents)
-
-- Base image: `registry.access.redhat.com/ubi9/python-312` (never Docker Hub base images — avoids rate limits on OpenShift)
-- Non-root user: UID 1001, GID 0 (OpenShift arbitrary UID support)
-- Expose port 8080
-- Use `uv pip install` in Dockerfiles
-- Set `PYTHONPATH=/opt/app-root/src`
-- Pin `uv` version via hash in Dockerfiles
-
-## Adding a new agent
-
-See docs/adding-a-new-agent.md for the full template. Key points:
-
-1. Copy closest existing agent: `cp -r agents/langgraph/react_agent agents/<framework>/<your_agent>`
-2. Every agent needs: agent.yaml, values.yaml, .env.example, Makefile, Dockerfile, pyproject.toml, main.py, README.md, src/, tests/
-3. Set `nameOverride` in values.yaml to match `name` in agent.yaml
-4. Update root README agent table
-
-## Helm charts
-
-- All standard agents share `charts/agent/` — agent-specific config goes in each agent's `values.yaml`
-- `a2a/langgraph_crewai_agent` uses `charts/a2a-langgraph-crewai/` — check the agent's Makefile for `CHART_DIR` to confirm which chart to use
-- Secrets (API_KEY, MLFLOW_TRACKING_TOKEN) are injected via `.helm-secrets.yaml` (generated by Makefile, never committed)
-- Validate changes with `make dry-run` before deploying
-- Lint charts with `helm lint <CHART_DIR> -f agents/<agent>/values.yaml` using the correct chart path
-
-## Testing
-
-```bash
-# From an agent directory
-make test                                    # standard way
-uv run --extra dev python -m pytest tests/   # direct invocation
-```
-
-- Tests are in each agent's `tests/` directory (some agents have placeholder tests only — check before assuming coverage)
-- pytest is an optional `dev` dependency in pyproject.toml
-- Always run `make test` before committing changes to agent code
-
-## Environment variables
-
-- Never commit `.env` files — only `.env.example` templates
-- Most agents require: `API_KEY`, `BASE_URL`, `MODEL_ID` (see [Non-standard agents](#non-standard-agents) for exceptions)
-- Common optional: `PORT`, `CONTAINER_IMAGE`
-- Check `agent.yaml` in each agent directory for the full required/optional list
+- When unsure if an agent is standard, check its Makefile and Dockerfile first
 
 ## Non-standard agents
 
-Most agents follow the standard pattern (FastAPI, UBI9 container, shared Helm chart). Two agents diverge significantly:
+Two agents diverge significantly from the standard pattern:
 
-### langflow/simple_tool_calling_agent
+**langflow/simple_tool_calling_agent** - Podman Compose flow-import deployment, not standalone FastAPI. No Dockerfile, pyproject.toml, main.py, src/, or tests/. Different Makefile targets (`init`, `ollama`, `run`, `stop`, `clean`). Uses infra-only env vars (PostgreSQL, Langfuse, Ollama) -- not `API_KEY`/`BASE_URL`/`MODEL_ID`.
 
-- **Architecture**: Podman Compose-based flow-import deployment, not a standalone FastAPI app
-- **No Dockerfile, pyproject.toml, main.py, src/, or tests/**
-- **Makefile targets differ**: `init`, `ollama`, `llama-server`, `run`, `stop`, `clean`, `status`, `logs` (not the standard set)
-- **Environment variables**: Infra-only (PostgreSQL, Langfuse, Ollama) — does not use `API_KEY`, `BASE_URL`, `MODEL_ID`
-
-### a2a/langgraph_crewai_agent
-
-- **Base image**: Uses `python:3.12-slim` (Docker Hub) instead of the standard UBI9 image
-- **PYTHONPATH**: `/app` instead of `/opt/app-root/src`
-- **Helm chart**: Uses `charts/a2a-langgraph-crewai/` instead of `charts/agent/`
-- **No tests/ directory or `test` Makefile target**
-- **No `.env.example`** — uses `template.env` instead
-- **Uses `entrypoint.sh`** instead of `main.py` — conditionally launches modules based on `A2A_ROLE`
-- **Uses Starlette** instead of FastAPI (still exposes the same API contract)
-
-## When validation fails
-
-- If `make test` fails: read the error output, fix the root cause — don't skip tests
-- If an agent has no tests (empty `tests/` or no `test` target): note it and move on
-- If `make build` fails: check Dockerfile syntax, base image availability, and dependency resolution before retrying
+**a2a/langgraph_crewai_agent** - Uses `python:3.12-slim` (not UBI9), PYTHONPATH `/app` (not `/opt/app-root/src`), `charts/a2a-langgraph-crewai/` chart, `template.env` (not `.env.example`), `entrypoint.sh` (not `main.py`), Starlette (not FastAPI). No tests/ directory.
 
 ## Common gotchas
 
-- The Makefile reads the agent name from `agent.yaml` at runtime — if agent.yaml is malformed, all make targets break
-- Port mapping: local dev = `8000` (`PORT` env var), container = `8080`, Llama Stack = `8321` — don't mix these up
-- `images/` directory is copied into the build context temporarily by `make build` and cleaned up via trap — don't put large files there
-- The Makefile auto-detects podman over docker — set `CONTAINER_CLI` explicitly if you need to override
+- `agent.yaml` is read at runtime by Makefile -- if malformed, all make targets break
+- Port mapping: local dev = `8000`, container = `8080`, Llama Stack = `8321` -- don't mix these up
+- `images/` dir is copied into build context temporarily by `make build` -- don't put large files there
+- Makefile auto-detects podman over docker -- set `CONTAINER_CLI` to override
+- Helm secrets via `.helm-secrets.yaml` (generated by Makefile, never committed)
 
-## Additional resources
+## References
 
-- [docs/local-development.md](docs/local-development.md) — local setup and development workflow
-- [docs/openshift-deployment.md](docs/openshift-deployment.md) — deploying agents to OpenShift
-- [docs/adding-a-new-agent.md](docs/adding-a-new-agent.md) — step-by-step guide for new agents
+- [docs/local-development.md](docs/local-development.md) -- local setup
+- [docs/openshift-deployment.md](docs/openshift-deployment.md) -- OpenShift deployment
+- [docs/adding-a-new-agent.md](docs/adding-a-new-agent.md) -- new agent template
+- [CONTRIBUTING.md](CONTRIBUTING.md) -- commit conventions, PR process
