@@ -154,7 +154,7 @@ Read `<agent_path>/README.md` and verify:
 ### Overall: PASS / FAIL
 ```
 
-If FAIL, specify which skill or step to re-run to fix the issues (e.g., "`create-tracing-module` — missing graceful degradation", "`integrate-tracing` Step 7 — .env.example missing OpenShift section", or "`integrate-tracing` Step 8 — README missing local MLflow install").
+If FAIL, specify which skill or step to re-run to fix the issues (e.g., "`create-tracing-module` — missing graceful degradation", "`integrate-tracing` Step 9 — .env.example missing OpenShift section", or "`integrate-tracing` Step 10 — README missing local MLflow install").
 
 ## Self-Update
 

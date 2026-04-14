@@ -194,8 +194,7 @@ Add these sections to the agent's `README.md` (use an existing agent like `langg
      - If set but unreachable, the app logs a warning and continues without tracing
      - `MLFLOW_HEALTH_CHECK_TIMEOUT` controls wait time (default: 5s)
 
-3. **Local MLflow install** — in the Local Usage section, after `uv pip install -e .`, add:
-4. **MLflow server start** — in the Local Usage section, add a step to start the MLflow server:
+3. **MLflow server start** — in the Local Usage section, add a step to start the MLflow server (this also installs MLflow as an optional dependency):
    ```bash
    uv run --extra tracing mlflow server --port 5000
    ```
@@ -231,7 +230,7 @@ All files that must be created or updated when integrating tracing:
 
 ## Keeping Skills Up to Date
 
-If at any point during this workflow you deviate from a skill's instructions because they were inaccurate, outdated, or insufficient — and your deviation works — **update the skill file** with what you learned. This includes:
+If at any point during this workflow you deviate from a skill's instructions because they were inaccurate, outdated, or insufficient — and your deviation works — **propose the specific changes to the user** and only update the skill file if they approve. This includes:
 
 - A step that didn't work as described and needed a different approach
 - A new pattern or edge case not covered by the skill
