@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(command -v *)",
+      "Bash(oc whoami*)",
+      "Bash(oc version*)",
+      "Bash(oc project*)",
+      "Bash(oc projects*)",
+      "Bash(oc get *)",
+      "Bash(oc describe *)",
+      "Bash(oc logs *)",
+      "Bash(helm list*)",
+      "Bash(helm version*)",
+      "Bash(make --version*)",
+      "Bash(make help*)",
+      "Bash(make init*)",
+      "Bash(make dry-run*)",
+      "Bash(make test*)",
+      "Bash(curl -s *)",
+      "Bash(test -f *)",
+      "Bash(find agents/*)",
+      "Bash(python3 -c *)",
+      "Bash(source .env*)",
+      "Bash(head -5 *)",
+      "Bash(wc -l *)",
+      "Bash(cat agent.yaml*)",
+      "Bash(grep *)"
+    ]
+  }
+}

@@ -17,3 +17,5 @@ uv.lock
 agents/langflow/simple_tool_calling_agent/local/.ollama-enabled
 *.db
 CLAUDE.local.md
+docs/superpowers/
+**/evals/
