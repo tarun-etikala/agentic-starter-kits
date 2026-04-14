@@ -1,7 +1,14 @@
+---
+name: check-autolog-support
+description: Researches and classifies a framework's MLflow autolog support level (A, B, or C) to determine what manual tracing is needed.
+argument-hint: "<framework>"
+disable-model-invocation: true
+---
+
 # Check MLflow Autolog Support for a Framework
 
-> **Usage:** `/project:check-autolog-support <framework>`
-> **Example:** `/project:check-autolog-support autogen`
+> **Usage:** `/check-autolog-support <framework>`
+> **Example:** `/check-autolog-support autogen`
 
 You are determining whether MLflow has autolog support for a given agent framework, and what that autolog covers.
 
@@ -73,13 +80,13 @@ Output a summary in this format:
 
 This report will be used by the orchestrator to decide which tracing pattern to apply.
 
-## Self-Update (mandatory)
+## Self-Update
 
-**Before finishing, you MUST check whether this skill file needs updating.** This is not optional. If any of the following are true, update this file immediately:
+Before finishing, check whether this skill file needs updating. If any of the following are true, **propose the specific changes to the user** and only update this file if they approve:
 
 - You deviated from these instructions because they were inaccurate, outdated, or insufficient — and your deviation worked.
-- You encountered a new pattern not covered here (e.g., a framework that uses OpenTelemetry instead of autolog, or a new provider path). Add it as a variant under the existing levels (A, B, or C) rather than introducing new levels.
+- You encountered a new pattern not covered here (e.g., a framework that uses OpenTelemetry instead of autolog, or a new provider path).
 - File paths, function names, or API patterns referenced here have changed.
 - A step didn't work as described and needed a different approach.
 
-If nothing needed changing, move on. But do not skip this check.
+If nothing needed changing, move on.

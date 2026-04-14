@@ -1,7 +1,14 @@
+---
+name: add-manual-tracing
+description: Adds manual MLflow trace wrapping for tool and agent spans in Level B and C agents where autolog doesn't cover everything.
+argument-hint: "<agent_path>"
+disable-model-invocation: true
+---
+
 # Add Manual Tracing (Level B and C)
 
-> **Usage:** `/project:add-manual-tracing <agent_path>`
-> **Example:** `/project:add-manual-tracing agents/autogen/chat_agent`
+> **Usage:** `/add-manual-tracing <agent_path>`
+> **Example:** `/add-manual-tracing agents/autogen/chat_agent`
 
 You are adding manual `wrap_func_with_mlflow_trace()` calls to an agent template where autolog does not fully cover all tracing layers.
 
@@ -9,11 +16,9 @@ You are adding manual `wrap_func_with_mlflow_trace()` calls to an agent template
 
 ## Input
 
-You need:
-1. **Agent path**: The agent directory (e.g., `agents/autogen/chat_agent/`)
-2. **Package name**: The Python package name
-3. **Coverage level**: B or C
-4. **Autolog support report**: What the autolog covers and what it misses
+The agent path is: $ARGUMENTS
+
+You also need the **package name**, **coverage level** (B or C), and **autolog support report**. If not provided, determine the package name from `pyproject.toml` or `src/`, and the coverage level from the agent's `tracing.py`.
 
 ## Steps
 
@@ -103,7 +108,7 @@ This is critical. Read `_handle_stream` in `main.py` carefully.
 
 **If streaming creates a new agent instance directly** (bypasses the adapter):
 - You MUST duplicate the wrapping inside the streaming path.
-- This is the pattern used by the Vanilla Python agent. See `agents/vanilla_python/openai_responses_agent/main.py` lines 247-258:
+- This is the pattern used by the Vanilla Python agent. See the `run_agent()` function inside `_handle_stream` in `agents/vanilla_python/openai_responses_agent/main.py`:
 
 ```python
 # Inside _handle_stream's run_agent():
@@ -130,9 +135,9 @@ Confirm that `wrap_func_with_mlflow_trace()` in `tracing.py` returns the origina
 
 ## Reference Files
 
-- **Level B tool wrapping**: `agents/crewai/websearch_agent/src/crewai_web_search/crew.py` (lines 29-33)
-- **Level C tool + agent wrapping (non-streaming)**: `agents/vanilla_python/openai_responses_agent/src/openai_responses_agent/agent.py` (lines 86-89)
-- **Level C streaming path wrapping**: `agents/vanilla_python/openai_responses_agent/main.py` (lines 247-258)
+- **Level B tool wrapping**: `agents/crewai/websearch_agent/src/crewai_web_search/crew.py` — `ai_assistant()` method
+- **Level C tool + agent wrapping (non-streaming)**: `agents/vanilla_python/openai_responses_agent/src/openai_responses_agent/agent.py` — `_AIAgentAdapter.run()` method
+- **Level C streaming path wrapping**: `agents/vanilla_python/openai_responses_agent/main.py` — `run_agent()` inside `_handle_stream()`
 
 ## Final Checklist
 
@@ -143,13 +148,13 @@ Confirm that `wrap_func_with_mlflow_trace()` in `tracing.py` returns the origina
 - [ ] No duplicate wrapping — each function is wrapped exactly once per request
 - [ ] The `name` parameter is used when wrapping tool objects (so span names are meaningful, not `_run`)
 
-## Self-Update (mandatory)
+## Self-Update
 
-**Before finishing, you MUST check whether this skill file needs updating.** This is not optional. If any of the following are true, update this file immediately:
+Before finishing, check whether this skill file needs updating. If any of the following are true, **propose the specific changes to the user** and only update this file if they approve:
 
 - You deviated from these instructions because they were inaccurate, outdated, or insufficient — and your deviation worked.
-- You encountered a new pattern not covered here (e.g., a framework that uses OpenTelemetry instead of autolog, or a new provider path). Add it as a variant under the existing levels (A, B, or C) rather than introducing new levels.
+- You encountered a new pattern not covered here (e.g., a framework that uses OpenTelemetry instead of autolog, or a new provider path).
 - File paths, function names, or API patterns referenced here have changed.
 - A step didn't work as described and needed a different approach.
 
-If nothing needed changing, move on. But do not skip this check.
+If nothing needed changing, move on.

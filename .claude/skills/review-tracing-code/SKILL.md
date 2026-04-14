@@ -1,7 +1,14 @@
+---
+name: review-tracing-code
+description: Reviews tracing integration code for correctness against the repo's established patterns and checklists.
+argument-hint: "<agent_path>"
+disable-model-invocation: true
+---
+
 # Review Tracing Code
 
-> **Usage:** `/project:review-tracing-code <agent_path>`
-> **Example:** `/project:review-tracing-code agents/autogen/chat_agent`
+> **Usage:** `/review-tracing-code <agent_path>`
+> **Example:** `/review-tracing-code agents/autogen/chat_agent`
 
 You are reviewing the MLflow tracing integration code for an agent template to confirm it follows the repo's established patterns and is correctly wired.
 
@@ -9,12 +16,9 @@ You are reviewing the MLflow tracing integration code for an agent template to c
 
 ## Input
 
-You need:
-1. **Agent path**: The agent directory (e.g., `agents/autogen/chat_agent/`)
-2. **Package name**: The Python package name (find from `pyproject.toml` or `src/` directory)
-3. **Coverage level**: A, B, or C (from the autolog support report)
+The agent path is: $ARGUMENTS
 
-If any are missing, determine them by reading the agent's files.
+You also need the **package name** and **coverage level** (A, B, or C). If not provided, determine them by reading the agent's `pyproject.toml`, `src/` directory, and `tracing.py`.
 
 ## Review Checklist
 
@@ -152,13 +156,13 @@ Read `<agent_path>/README.md` and verify:
 
 If FAIL, specify which skill or step to re-run to fix the issues (e.g., "`create-tracing-module` — missing graceful degradation", "`integrate-tracing` Step 7 — .env.example missing OpenShift section", or "`integrate-tracing` Step 8 — README missing local MLflow install").
 
-## Self-Update (mandatory)
+## Self-Update
 
-**Before finishing, you MUST check whether this skill file needs updating.** This is not optional. If any of the following are true, update this file immediately:
+Before finishing, check whether this skill file needs updating. If any of the following are true, **propose the specific changes to the user** and only update this file if they approve:
 
 - You deviated from these instructions because they were inaccurate, outdated, or insufficient — and your deviation worked.
-- You encountered a new pattern not covered here (e.g., a framework that uses OpenTelemetry instead of autolog, or a new provider path). Add it as a variant under the existing levels (A, B, or C) rather than introducing new levels.
+- You encountered a new pattern not covered here (e.g., a framework that uses OpenTelemetry instead of autolog, or a new provider path).
 - File paths, function names, or API patterns referenced here have changed.
 - A step didn't work as described and needed a different approach.
 
-If nothing needed changing, move on. But do not skip this check.
+If nothing needed changing, move on.

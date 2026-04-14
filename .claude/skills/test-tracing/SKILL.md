@@ -1,7 +1,14 @@
+---
+name: test-tracing
+description: Tests MLflow tracing end-to-end by starting servers, sending requests, and verifying spans appear correctly in the MLflow API.
+argument-hint: "<agent_path>"
+disable-model-invocation: true
+---
+
 # Test MLflow Tracing
 
-> **Usage:** `/project:test-tracing <agent_path>`
-> **Example:** `/project:test-tracing agents/langgraph/react_agent`
+> **Usage:** `/test-tracing <agent_path>`
+> **Example:** `/test-tracing agents/langgraph/react_agent`
 
 You are testing that MLflow tracing is working correctly for an agent template — verifying that traces land in the MLflow server with the expected spans.
 
@@ -305,13 +312,13 @@ Report the results:
 **Issues found**: <list or "None">
 ```
 
-## Self-Update (mandatory)
+## Self-Update
 
-**Before finishing, you MUST check whether this skill file needs updating.** This is not optional. If any of the following are true, update this file immediately:
+Before finishing, check whether this skill file needs updating. If any of the following are true, **propose the specific changes to the user** and only update this file if they approve:
 
 - You deviated from these instructions because they were inaccurate, outdated, or insufficient — and your deviation worked.
-- You encountered a new pattern not covered here (e.g., a framework that uses OpenTelemetry instead of autolog, or a new provider path). Add it as a variant under the existing levels (A, B, or C) rather than introducing new levels.
+- You encountered a new pattern not covered here (e.g., a framework that uses OpenTelemetry instead of autolog, or a new provider path).
 - File paths, function names, or API patterns referenced here have changed.
 - A step didn't work as described and needed a different approach.
 
-If nothing needed changing, move on. But do not skip this check.
+If nothing needed changing, move on.

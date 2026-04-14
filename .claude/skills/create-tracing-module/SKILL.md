@@ -1,17 +1,24 @@
+---
+name: create-tracing-module
+description: Creates the tracing.py module with enable_tracing(), health check, and framework-specific autolog configuration.
+argument-hint: "<agent_path> [framework]"
+disable-model-invocation: true
+---
+
 # Create the Tracing Module (`tracing.py`)
 
-> **Usage:** `/project:create-tracing-module <agent_path>`
-> **Example:** `/project:create-tracing-module agents/autogen/chat_agent`
+> **Usage:** `/create-tracing-module <agent_path>`
+> **Example:** `/create-tracing-module agents/autogen/chat_agent`
 
 You are creating the `tracing.py` file for a new agent template, following this repo's established patterns.
 
 ## Input
 
-You need two pieces of information before proceeding:
-1. **Agent path**: The agent directory (e.g., `agents/autogen/chat_agent/`)
-2. **Autolog support report**: The output from the `check-autolog-support` skill, which classifies the framework as Level A, B, or C and identifies the autolog module(s) needed.
+The agent path is: $ARGUMENTS
 
-If either is missing, ask the user.
+You also need the **framework name** (e.g., `autogen`, `langgraph`, `crewai`) and the **autolog support report** (which classifies the framework as Level A, B, or C). The framework may be included as a second word in `$ARGUMENTS`. If not provided, determine it from the agent's `pyproject.toml` dependencies.
+
+If the autolog report is not available in the current conversation context, read and follow `.claude/skills/check-autolog-support/SKILL.md` with the framework name to produce the report before continuing.
 
 ## Context
 
@@ -76,13 +83,13 @@ After creating the file, verify:
 - [ ] The correct autolog module is used for the framework
 - [ ] `enable_async_logging()` is called before autolog
 
-## Self-Update (mandatory)
+## Self-Update
 
-**Before finishing, you MUST check whether this skill file needs updating.** This is not optional. If any of the following are true, update this file immediately:
+Before finishing, check whether this skill file needs updating. If any of the following are true, **propose the specific changes to the user** and only update this file if they approve:
 
 - You deviated from these instructions because they were inaccurate, outdated, or insufficient — and your deviation worked.
-- You encountered a new pattern not covered here (e.g., a framework that uses OpenTelemetry instead of autolog, or a new provider path). Add it as a variant under the existing levels (A, B, or C) rather than introducing new levels.
+- You encountered a new pattern not covered here (e.g., a framework that uses OpenTelemetry instead of autolog, or a new provider path).
 - File paths, function names, or API patterns referenced here have changed.
 - A step didn't work as described and needed a different approach.
 
-If nothing needed changing, move on. But do not skip this check.
+If nothing needed changing, move on.

@@ -1,7 +1,13 @@
+---
+name: integrate-tracing
+description: Orchestrates end-to-end MLflow tracing integration into an agent template, coordinating all sub-skills from research through verification.
+argument-hint: "<framework> <agent_path>"
+---
+
 # Integrate MLflow Tracing into an Agent Template
 
-> **Usage:** `/project:integrate-tracing <framework> <agent_path>`
-> **Example:** `/project:integrate-tracing autogen agents/autogen/chat_agent`
+> **Usage:** `/integrate-tracing <framework> <agent_path>`
+> **Example:** `/integrate-tracing autogen agents/autogen/chat_agent`
 
 You are integrating MLflow tracing into a new agent template in this repository. This is the orchestrator skill that coordinates the full end-to-end process by following a structured sequence of steps, deferring to reference skills for each step.
 
@@ -20,7 +26,7 @@ Read `tracing.md` at the repo root for full context on the tracing architecture,
 
 ## Workflow
 
-**IMPORTANT: You must follow these steps in exact sequential order (1 → 2 → 3 → ... → 9). Do not skip ahead, reorder, or combine steps. Each step depends on the output of previous steps — especially the autolog report from Step 1, which drives decisions in Steps 4, 5, 6, and 7. Complete each step fully before moving to the next.**
+**IMPORTANT: You must follow these steps in exact sequential order (1 → 2 → 3 → ... → 10). Do not skip ahead, reorder, or combine steps. Each step depends on the output of previous steps — especially the autolog report from Step 1, which drives decisions in Steps 4, 5, 6, and 7. Complete each step fully before moving to the next.**
 
 **IMPORTANT: Always create a demo agent first (Step 2) and implement all tracing and testing on the demo copy (Steps 3–7). Only after everything works correctly on the demo — traces land in MLflow, spans are correct, both streaming and non-streaming paths are verified — apply the same changes to the actual agent template (Steps 4–9). Never modify the real agent template until the demo is fully working.**
 
@@ -28,7 +34,7 @@ Read `tracing.md` at the repo root for full context on the tracing architecture,
 
 **Goal**: Determine what MLflow autolog covers for this framework.
 
-Follow the `check-autolog-support` skill with the framework name. This will produce an autolog support report classifying the framework as:
+Read and follow `.claude/skills/check-autolog-support/SKILL.md` with the framework name. This will produce an autolog support report classifying the framework as:
 
 - **Level A** — Full autolog (like LangGraph, LlamaIndex)
 - **Level B** — Partial autolog (like CrewAI)
@@ -76,7 +82,7 @@ Identify:
 
 **Goal**: Create `tracing.py` with the correct pattern for this framework.
 
-Follow the `create-tracing-module` skill, providing:
+Read and follow `.claude/skills/create-tracing-module/SKILL.md`, providing:
 - The agent path
 - The autolog support report from Step 1
 
@@ -89,7 +95,7 @@ This creates `src/<package>/tracing.py` with:
 
 **Goal**: Connect tracing to the app startup.
 
-Follow the `wire-into-lifespan` skill, providing:
+Read and follow `.claude/skills/wire-into-lifespan/SKILL.md`, providing:
 - The agent path
 - The package name
 - The coverage level
@@ -102,7 +108,7 @@ This adds the import and `enable_tracing()` call to `main.py`.
 
 **Skip this step entirely for Level A** — autolog handles everything.
 
-For Level B or C, follow the `add-manual-tracing` skill, providing:
+For Level B or C, read and follow `.claude/skills/add-manual-tracing/SKILL.md`, providing:
 - The agent path
 - The package name
 - The coverage level
@@ -117,7 +123,7 @@ This adds `wrap_func_with_mlflow_trace()` calls for:
 
 **Goal**: Confirm traces land correctly in MLflow.
 
-Read and execute every step in the `verify-traces` skill yourself, which in turn requires you to execute the `review-tracing-code` and `test-tracing` skills. You must do everything hands-on — install MLflow if needed, start the MLflow server, start the agent, send requests, query the MLflow API, inspect spans. Do NOT stop here and tell the user to test manually. Do NOT summarize what the user should do. Execute it all yourself.
+Read and follow `.claude/skills/verify-traces/SKILL.md` yourself, which in turn requires you to read and follow `.claude/skills/review-tracing-code/SKILL.md` and `.claude/skills/test-tracing/SKILL.md`. You must do everything hands-on — install MLflow if needed, start the MLflow server, start the agent, send requests, query the MLflow API, inspect spans. Do NOT stop here and tell the user to test manually. Do NOT summarize what the user should do. Execute it all yourself.
 
 After verification, always report these three values to the user:
 - **MLflow Server URI** — the URI used to connect to the MLflow server (e.g., `http://localhost:5000`)
@@ -126,7 +132,21 @@ After verification, always report these three values to the user:
 
 If verification fails, the report will indicate which step to revisit.
 
-### Step 8: Update .env.example
+### Step 8: Update Makefile
+
+**Goal**: Ensure `make run` auto-installs MLflow when `MLFLOW_TRACKING_URI` is set.
+
+In the agent's `Makefile`, add `$${MLFLOW_TRACKING_URI:+--extra tracing}` to the `uv run` command in the `run` target (and `run-cli` if it exists). For example:
+
+```makefile
+run:
+	@set -a && source .env && set +a && \
+	  uv run $${MLFLOW_TRACKING_URI:+--extra tracing} uvicorn main:app --host 127.0.0.1 --port $${PORT:-8000} --reload --reload-exclude .venv
+```
+
+This bash parameter expansion adds `--extra tracing` only when `MLFLOW_TRACKING_URI` is set, which tells `uv run` to install the `tracing` optional dependency from `pyproject.toml`.
+
+### Step 9: Update .env.example
 
 **Goal**: Add MLflow environment variables to `.env.example` so users know which variables to configure.
 
@@ -152,7 +172,7 @@ Add the following sections to the agent's `.env.example` file (if not already pr
 # MLFLOW_TRACKING_AUTH= # Use Kubernetes service account for authentication (if running inside the cluster)
 ```
 
-### Step 9: Update README.md
+### Step 10: Update README.md
 
 **Goal**: Document tracing setup for both local and OpenShift deployments.
 
@@ -205,8 +225,9 @@ All files that must be created or updated when integrating tracing:
 | 5. Wire into lifespan | `wire-into-lifespan` | Run | Run | Run |
 | 6. Add manual tracing | `add-manual-tracing` | **Skip** | Run | Run |
 | 7. Verify | `verify-traces` | Run | Run | Run |
-| 8. Update .env.example | (inline) | Run | Run | Run |
-| 9. Update README.md | (inline) | Run | Run | Run |
+| 8. Update Makefile | (inline) | Run | Run | Run |
+| 9. Update .env.example | (inline) | Run | Run | Run |
+| 10. Update README.md | (inline) | Run | Run | Run |
 
 ## Keeping Skills Up to Date
 

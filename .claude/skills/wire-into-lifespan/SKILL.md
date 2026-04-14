@@ -1,18 +1,22 @@
+---
+name: wire-into-lifespan
+description: Wires enable_tracing() into the FastAPI lifespan and adds manual trace wrapping imports to main.py.
+argument-hint: "<agent_path>"
+disable-model-invocation: true
+---
+
 # Wire Tracing into the FastAPI Lifespan
 
-> **Usage:** `/project:wire-into-lifespan <agent_path>`
-> **Example:** `/project:wire-into-lifespan agents/autogen/chat_agent`
+> **Usage:** `/wire-into-lifespan <agent_path>`
+> **Example:** `/wire-into-lifespan agents/autogen/chat_agent`
 
 You are connecting the `tracing.py` module to the agent's FastAPI app so that tracing is initialized at startup.
 
 ## Input
 
-You need:
-1. **Agent path**: The agent directory (e.g., `agents/autogen/chat_agent/`)
-2. **Package name**: The Python package name (e.g., `autogen_chat`)
-3. **Coverage level**: A, B, or C (from the autolog support report)
+The agent path is: $ARGUMENTS
 
-If any are missing, determine them by reading the agent's `pyproject.toml` and `src/` directory.
+You also need the **package name** and **coverage level** (A, B, or C). If not provided, determine them by reading the agent's `pyproject.toml` and `src/` directory.
 
 ## Steps
 
@@ -87,15 +91,15 @@ agent.run = wrap_func_with_mlflow_trace(agent.run, span_type="agent")
 #### Streaming path
 Check if `_handle_stream` in `main.py` creates the agent differently from `_handle_chat`. If it does (e.g., creates a new agent instance directly instead of using the closure), the wrapping must be duplicated in the streaming path.
 
-Reference: In the Vanilla Python agent, `_handle_stream` creates `AIAgent` directly and wraps tools + `agent.query` inside the `run_agent()` function. See `agents/vanilla_python/openai_responses_agent/main.py` lines 247-258.
+Reference: In the Vanilla Python agent, `_handle_stream` creates `AIAgent` directly and wraps tools + `agent.query` inside the `run_agent()` function. See `agents/vanilla_python/openai_responses_agent/main.py`, search for `def run_agent()`.
 
 ## Reference Files
 
 Read these to see the wiring patterns in practice:
-- `agents/vanilla_python/openai_responses_agent/main.py` — Level C wiring (import on line 13, `enable_tracing()` on line 124, streaming wrapping on lines 254-257)
-- `agents/langgraph/react_agent/main.py` — Level A wiring (import on line 17, `enable_tracing()` on line 120)
-- `agents/crewai/websearch_agent/main.py` — Level B wiring (import on line 17, `enable_tracing()` on line 153)
-- `agents/crewai/websearch_agent/src/crewai_web_search/crew.py` — Level B tool wrapping (lines 30-33)
+- `agents/vanilla_python/openai_responses_agent/main.py` — Level C wiring (search for `import enable_tracing`, `enable_tracing()` in `lifespan()`, and `run_agent()` in `_handle_stream`)
+- `agents/langgraph/react_agent/main.py` — Level A wiring (search for `import enable_tracing` and `enable_tracing()` in `lifespan()`)
+- `agents/crewai/websearch_agent/main.py` — Level B wiring (search for `import enable_tracing` and `enable_tracing()` in `lifespan()`)
+- `agents/crewai/websearch_agent/src/crewai_web_search/crew.py` — Level B tool wrapping (search for `wrap_func_with_mlflow_trace` in `ai_assistant()`)
 
 ## Final Checklist
 
@@ -105,13 +109,13 @@ Read these to see the wiring patterns in practice:
 - [ ] For Level B/C: Both streaming and non-streaming paths have wrapping applied
 - [ ] No MLflow imports are added directly to `main.py` — all MLflow interaction goes through `tracing.py`
 
-## Self-Update (mandatory)
+## Self-Update
 
-**Before finishing, you MUST check whether this skill file needs updating.** This is not optional. If any of the following are true, update this file immediately:
+Before finishing, check whether this skill file needs updating. If any of the following are true, **propose the specific changes to the user** and only update this file if they approve:
 
 - You deviated from these instructions because they were inaccurate, outdated, or insufficient — and your deviation worked.
-- You encountered a new pattern not covered here (e.g., a framework that uses OpenTelemetry instead of autolog, or a new provider path). Add it as a variant under the existing levels (A, B, or C) rather than introducing new levels.
+- You encountered a new pattern not covered here (e.g., a framework that uses OpenTelemetry instead of autolog, or a new provider path).
 - File paths, function names, or API patterns referenced here have changed.
 - A step didn't work as described and needed a different approach.
 
-If nothing needed changing, move on. But do not skip this check.
+If nothing needed changing, move on.
