@@ -112,6 +112,10 @@ Read `<agent_path>/README.md` and verify:
 - [ ] `run` target uses `$${MLFLOW_TRACKING_URI:+--extra tracing}` in the `uv run` command
 - [ ] `run-cli` target (if it exists) uses the same flag
 
+### 9. Dockerfile installs tracing extra (if Dockerfile exists)
+
+- [ ] The package install step in `Dockerfile` includes the `tracing` extra (e.g., `".[tracing]"` instead of `"."`)
+
 ## Output
 
 ```text
@@ -150,6 +154,9 @@ Read `<agent_path>/README.md` and verify:
 ### Makefile
 - run target has --extra tracing flag: YES / NO
 - run-cli target has --extra tracing flag: YES / NO / N/A
+
+### Dockerfile
+- Installs .[tracing] extra: YES / NO
 
 ### Overall: PASS / FAIL
 ```

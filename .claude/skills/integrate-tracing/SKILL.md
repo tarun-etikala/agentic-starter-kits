@@ -199,6 +199,14 @@ Add these sections to the agent's `README.md` (use an existing agent like `langg
    uv run --extra tracing mlflow server --port 5000
    ```
 
+### Step 11: Update Dockerfile
+
+**Goal**: Ensure containerized deployments include MLflow.
+
+If the agent has a `Dockerfile`, make sure the package install step includes the `tracing` extra (e.g., `".[tracing]"` instead of `"."`).
+
+Without this, deployed agents with `MLFLOW_TRACKING_URI` set will fail at startup because `mlflow` won't be installed.
+
 ## Complete Checklist
 
 All files that must be created or updated when integrating tracing:
@@ -212,6 +220,7 @@ All files that must be created or updated when integrating tracing:
 | 5 | `README.md` | **Edit** | Add local tracing config, OpenShift tracing config, MLflow server start |
 | 6 | `pyproject.toml` | **Edit** | Add `tracing = ["mlflow>=3.10.0"]` to `[project.optional-dependencies]` |
 | 7 | `Makefile` | **Edit** | Add `$${MLFLOW_TRACKING_URI:+--extra tracing}` to `uv run` in `run` and `run-cli` targets |
+| 8 | `Dockerfile` | **Edit** | Change `"."` to `".[tracing]"` in `uv pip install` line |
 
 ## Summary
 
@@ -227,6 +236,7 @@ All files that must be created or updated when integrating tracing:
 | 8. Update Makefile | (inline) | Run | Run | Run |
 | 9. Update .env.example | (inline) | Run | Run | Run |
 | 10. Update README.md | (inline) | Run | Run | Run |
+| 11. Update Dockerfile | (inline) | Run | Run | Run |
 
 ## Keeping Skills Up to Date
 
