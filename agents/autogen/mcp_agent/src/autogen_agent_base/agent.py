@@ -1,3 +1,4 @@
+from os import getenv
 from typing import Callable
 
 from autogen_core.models import ModelFamily
@@ -44,7 +45,7 @@ def get_agent_chat(
             model_client=model_client,
             tools=effective_tools,
             system_message=system_prompt,
-            model_client_stream=True,
+            model_client_stream=getenv("MODEL_CLIENT_STREAM", "false").lower() == "true",
             reflect_on_tool_use=True,
         )
 
