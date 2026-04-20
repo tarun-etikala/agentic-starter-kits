@@ -18,7 +18,7 @@ dynamically (e.g. churn prediction, deployment), and answers user questions via 
 
 - Discovers and loads tools from an MCP server at startup
 - Uses `reflect_on_tool_use=True` so the LLM reasons about tool results before responding
-- Supports both streaming (SSE) and non-streaming responses
+- Supports both streaming (SSE) and non-streaming responses (streaming auto-adjusts when MLflow tracing is enabled; see [Tracing](#tracing) section)
 - Includes an interactive web playground with an MCP tools panel
 - Extends OpenAI streaming with `mcp.tool_usage` events and `tool_invocations` in JSON responses
 
