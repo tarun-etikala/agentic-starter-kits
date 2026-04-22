@@ -48,14 +48,18 @@ jobs:
           uv --version
 
       - name: Login to OpenShift
+        env:
+          OC_TOKEN: ${{ secrets.OC_TOKEN }}
+          CLUSTER_API_URL: ${{ secrets.CLUSTER_API_URL }}
         run: |
           oc login \
-            --token="${{ secrets.OC_TOKEN }}" \
-            --server="${{ secrets.CLUSTER_API_URL }}" \
+            --token="$OC_TOKEN" \
+            --server="$CLUSTER_API_URL" \
             --namespace=ci-testing
 
       - name: Verify cluster connection
         run: |
+          set -o pipefail
           echo "--- Logged in as ---"
           oc whoami
           echo ""
@@ -63,7 +67,7 @@ jobs:
           oc project
           echo ""
           echo "--- Namespace resources ---"
-          oc get all -n ci-testing --no-headers 2>&1 | head -10
+          oc get all -n ci-testing --no-headers | head -10
           echo ""
           echo "Cluster connection verified successfully."
 
