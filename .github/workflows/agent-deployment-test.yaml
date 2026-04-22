@@ -11,10 +11,14 @@ on:
     - cron: "0 3 * * *" # 11 PM EDT / 10 PM EST
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   verify-cluster-connection:
     name: "Verify Cluster Connection"
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
