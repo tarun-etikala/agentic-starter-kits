@@ -33,7 +33,7 @@ You can optionally add a scope (e.g. the agent or module name) in parentheses af
 
 ### Examples
 
-```
+```text
 feat: add health check endpoint to autogen mcp_agent
 fix: correct env var name in deployment in langgraph_react_agent
 docs: update README with OpenShift deploy steps
@@ -92,6 +92,7 @@ These are the files you need to create or update when adding tracing to your age
 This module exports `enable_tracing()` (and `wrap_func_with_mlflow_trace()` if your framework's autolog doesn't cover everything). It handles health-checking the MLflow server with retry logic, configuring the experiment, enabling the correct autolog for your framework, and gracefully degrading if the server is unreachable. MLflow imports are inside `enable_tracing()` (not at module top) so the module can be imported without MLflow installed — but if `MLFLOW_TRACKING_URI` is set and MLflow is missing, the agent will fail at startup with a clear error.
 
 See existing examples:
+
 - Full autolog (no manual wrapping needed): `agents/langgraph/react_agent/src/react_agent/tracing.py`
 - Partial autolog (tools need manual wrapping): `agents/crewai/websearch_agent/src/crewai_web_search/tracing.py`
 - No framework autolog (tools + agent entry point need manual wrapping): `agents/vanilla_python/openai_responses_agent/src/openai_responses_agent/tracing.py`

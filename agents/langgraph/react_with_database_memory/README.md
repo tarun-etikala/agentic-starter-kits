@@ -38,7 +38,7 @@ Key features:
 
 ## Local Development
 
-#### Initiating base
+### Initiating base
 
 `make init` creates a `.env` file from `.env.example`. Set your environment variables in the `.env` file.
 
@@ -82,6 +82,7 @@ MLFLOW_WORKSPACE="default"
 ```
 
 **Notes:**
+
 - `MLFLOW_TRACKING_URI` - URL of your MLflow server. For local development, use `http://localhost:5000`. If using MLflow on an OpenShift cluster, replace `<openshift-dashboard-url>` with your cluster's data science gateway URL.
 - `MLFLOW_TRACKING_TOKEN` - Required for OpenShift only. Your OpenShift authentication token, obtained from the OpenShift console.
 - `MLFLOW_EXPERIMENT_NAME` - A descriptive name for your experiment (e.g., "LangGraph DB Memory Demo")
@@ -223,9 +224,9 @@ POSTGRES_PASSWORD = your_db_password
 
   Examples:
 
-    - Quay.io: `quay.io/your-username/langgraph-db-memory-agent:latest`
-    - Docker Hub: `docker.io/your-username/langgraph-db-memory-agent:latest`
-    - GHCR: `ghcr.io/your-org/langgraph-db-memory-agent:latest`
+  - Quay.io: `quay.io/your-username/langgraph-db-memory-agent:latest`
+  - Docker Hub: `docker.io/your-username/langgraph-db-memory-agent:latest`
+  - GHCR: `ghcr.io/your-org/langgraph-db-memory-agent:latest`
 
   > **Note:** OpenShift must be able to pull the container image. Make the image **public**, or configure
   an [image pull secret](https://docs.openshift.com/container-platform/latest/openshift_images/managing_images/using-image-pull-secrets.html)
@@ -360,7 +361,7 @@ This agent combines three key components:
 2. **PostgresSaver Checkpointer** -- persistent conversation memory in PostgreSQL
 3. **ChatOpenAI** -- OpenAI-compatible LLM client (connects to Llama Stack or any OpenAI-compatible endpoint)
 
-```
+```text
 User Input --> LangGraph Agent --> ChatOpenAI --> LLM (Ollama/OpenAI)
                    |                               |
             PostgreSQL <-- PostgresSaver <-- Messages & State
@@ -393,14 +394,19 @@ To list all stored threads or view messages in a specific thread:
 
 1. Edit `examples/query_existing_deployment.py`
 2. To list all threads, leave `thread_id` empty:
+
    ```python
    thread_id = ""
    ```
+
    To view messages for a specific thread, set it:
+
    ```python
    thread_id = "123e4567-e89b-12d3-a456-426614174000"
    ```
+
 3. Run the script:
+
    ```bash
    uv run python examples/query_existing_deployment.py
    ```
@@ -411,14 +417,19 @@ To permanently delete a conversation thread (or all threads), use the provided s
 
 1. Edit `examples/clear_thread_history.py`
 2. To delete a specific thread, set the `thread_id`:
+
    ```python
    thread_id = "123e4567-e89b-12d3-a456-426614174000"
    ```
+
    To delete **all** threads, leave it empty:
+
    ```python
    thread_id = ""
    ```
+
 3. Run the script:
+
    ```bash
    uv run python examples/clear_thread_history.py
    ```

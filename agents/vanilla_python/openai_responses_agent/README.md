@@ -32,7 +32,7 @@ endpoint that supports the Responses API.
 > **Note:** This agent uses the [OpenAI Responses API](https://platform.openai.com/docs/api-reference/responses/create),
 > which is specific to OpenAI. It does not use Ollama or Llama Stack for local model serving.
 
-#### Initiating base
+### Initiating base
 
 `make init` creates a `.env` file from `.env.example`. Set your environment variables in the `.env` file.
 
@@ -76,6 +76,7 @@ MLFLOW_WORKSPACE="default"
 ```
 
 **Notes:**
+
 - `MLFLOW_TRACKING_URI` - URL of your MLflow server. For local development, use `http://localhost:5000`. If using MLflow on an OpenShift cluster, replace `<openshift-dashboard-url>` with your cluster's data science gateway URL.
 - `MLFLOW_TRACKING_TOKEN` - Required for OpenShift only. Your OpenShift authentication token, obtained from the OpenShift console.
 - `MLFLOW_EXPERIMENT_NAME` - A descriptive name for your experiment (e.g., "OpenAI Responses Demo")
@@ -150,9 +151,9 @@ CONTAINER_IMAGE = quay.io/your-username/openai-responses-agent:latest
 
   Examples:
 
-    - Quay.io: `quay.io/your-username/openai-responses-agent:latest`
-    - Docker Hub: `docker.io/your-username/openai-responses-agent:latest`
-    - GHCR: `ghcr.io/your-org/openai-responses-agent:latest`
+  - Quay.io: `quay.io/your-username/openai-responses-agent:latest`
+  - Docker Hub: `docker.io/your-username/openai-responses-agent:latest`
+  - GHCR: `ghcr.io/your-org/openai-responses-agent:latest`
 
   > **Note:** OpenShift must be able to pull the container image. Make the image **public**, or configure
   an [image pull secret](https://docs.openshift.com/container-platform/latest/openshift_images/managing_images/using-image-pull-secrets.html)
