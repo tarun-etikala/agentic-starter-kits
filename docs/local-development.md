@@ -1,6 +1,6 @@
 # Local Development
 
-Run agents locally using Ollama and Llama Stack for model serving, or connect to any OpenAI-compatible API.
+Run agents locally using Ollama and Llama Stack for model serving, or connect to any OpenAI-compatible API endpoint.
 
 **Windows users:** The Makefiles require a bash-compatible shell. Use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install), [Git Bash](https://git-scm.com/downloads), or a similar environment.
 

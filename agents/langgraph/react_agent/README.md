@@ -2,7 +2,7 @@
 
 ![LangGraph Logo](/images/langgraph_logo.svg)
 
-# ReACT Agent
+# ReAct Agent
 
 </div>
 
