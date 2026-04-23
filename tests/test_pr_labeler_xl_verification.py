@@ -1,3 +1,4 @@
+# PR size labeling XL dedup verification
 # Test function 0
 def test_placeholder_0():
     """Placeholder test 0 for PR size verification."""
