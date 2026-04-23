@@ -89,15 +89,26 @@ def ensure_label_exists(repo, label_name: str) -> None:
 
 def update_size_label(pr, new_label: str) -> bool:
     """Update the size label on a PR. Returns True if a change was made."""
+    found = False
+    stale = []
     for label in pr.get_labels():
         if label.name == new_label:
-            print(f"Label already correct: {new_label}")
-            return False
-        if label.name.startswith("size/"):
-            pr.remove_from_labels(label.name)
-            print(f"Removed label: {label.name}")
-    pr.add_to_labels(new_label)
-    print(f"Applied label: {new_label}")
+            found = True
+        elif label.name.startswith("size/"):
+            stale.append(label.name)
+
+    if found and not stale:
+        print(f"Label already correct: {new_label}")
+        return False
+
+    for name in stale:
+        pr.remove_from_labels(name)
+        print(f"Removed label: {name}")
+
+    if not found:
+        pr.add_to_labels(new_label)
+        print(f"Applied label: {new_label}")
+
     return True
 
 
