@@ -3,8 +3,8 @@
 PR Size Labeler — calculates PR size and applies size/* labels.
 
 Triggered by the pr-labeler workflow. Uses the GitHub API via PyGitHub
-to count lines changed (additions + deletions), excluding generated and
-binary files. Posts an advisory comment on XL PRs.
+to count lines changed (additions + deletions), excluding lock files,
+generated files, and images. Posts an advisory comment on XL PRs.
 
 Environment variables (set by the workflow):
     GITHUB_TOKEN        — GitHub token with pull-requests: write
