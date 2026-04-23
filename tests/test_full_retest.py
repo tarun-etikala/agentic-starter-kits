@@ -1,3 +1,4 @@
+# Push 2: same bucket, no label churn expected
 def test_full_retest_0():
     """Retest placeholder 0."""
     assert True
