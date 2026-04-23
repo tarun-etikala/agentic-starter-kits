@@ -43,6 +43,40 @@ chore: bump python-dotenv in requirements
 
 This is optional but appreciated; maintainers may ask you to reword commits when preparing a release.
 
+## Automated PR labels
+
+Every pull request is automatically labeled when opened or updated:
+
+**Area labels** (`area/*`) — applied based on which directories your PR touches. A PR can have multiple area labels if it spans several directories. These help reviewers quickly identify which parts of the codebase are affected.
+
+| Label | Matches |
+|-------|---------|
+| `area/langgraph` | `agents/langgraph/**` |
+| `area/crewai` | `agents/crewai/**` |
+| `area/autogen` | `agents/autogen/**` |
+| `area/llamaindex` | `agents/llamaindex/**` |
+| `area/langflow` | `agents/langflow/**` |
+| `area/google-adk` | `agents/google/**` |
+| `area/a2a` | `agents/a2a/**` |
+| `area/vanilla-python` | `agents/vanilla_python/**` |
+| `area/helm` | `charts/**` |
+| `area/docs` | `docs/**`, `*.md` (root) |
+| `area/ci` | `.github/**` |
+| `area/tests` | `tests/**`, `eval/**` |
+| `area/tracing` | `**/tracing.py`, `tracing.md` |
+
+**Size labels** (`size/*`) — applied based on total lines changed (additions + deletions), excluding lock files, generated files, and images.
+
+| Label | Lines Changed |
+|-------|--------------|
+| `size/xs` | 0–10 |
+| `size/s` | 11–100 |
+| `size/m` | 101–500 |
+| `size/l` | 501–1199 |
+| `size/xl` | 1200+ |
+
+PRs labeled `size/xl` will receive an advisory comment encouraging the author to consider splitting the PR. This is informational only — it does not block merges.
+
 ## Adding MLflow tracing to your agent template
 
 All agent templates in this repo must include MLflow tracing integration. Tracing lets users optionally capture LLM calls, tool executions, and agent orchestration spans in MLflow — it's opt-in via the `MLFLOW_TRACKING_URI` environment variable. If `MLFLOW_TRACKING_URI` is set but the server is unreachable, the agent logs a warning and continues without tracing. Note: if `MLFLOW_TRACKING_URI` is set but the MLflow package is not installed, the agent will fail at startup with an `ImportError` — MLflow must be installed when the env var is set.
