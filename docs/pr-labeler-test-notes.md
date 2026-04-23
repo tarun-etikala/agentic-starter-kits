@@ -1,4 +1,4 @@
-# PR Labeler Test Notes
+# PR Labeler Test Notes (updated)
 
 ## Test scenario 1
 Verifying that area and size labels update dynamically on push.
