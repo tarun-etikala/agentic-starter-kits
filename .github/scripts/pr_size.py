@@ -41,7 +41,6 @@ EXCLUDED_PATTERNS = [
     "uv.lock",
     "*.lock",
     "*.generated.*",
-    "images/*",
 ]
 
 XL_COMMENT_MARKER = "<!-- pr-size-labeler:xl-warning -->"
@@ -58,7 +57,10 @@ Consider splitting this PR into smaller, focused changes.
 
 
 def is_excluded(filename: str) -> bool:
-    """Check if a file matches any exclusion pattern."""
+    """Check if a file matches any exclusion pattern or is inside an images/ directory."""
+    # Check path-component match for images directories at any depth
+    if "/images/" in f"/{filename}":
+        return True
     for pattern in EXCLUDED_PATTERNS:
         if fnmatch.fnmatch(filename, pattern):
             return True
@@ -77,7 +79,9 @@ def ensure_label_exists(repo, label_name: str) -> None:
     """Create the label in the repo if it doesn't exist."""
     try:
         repo.get_label(label_name)
-    except GithubException:
+    except GithubException as exc:
+        if exc.status != 404:
+            raise
         color = LABEL_COLORS.get(label_name, "ededed")
         repo.create_label(name=label_name, color=color)
         print(f"Created label: {label_name}")
