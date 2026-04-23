@@ -48,9 +48,9 @@ XL_COMMENT_MARKER = "<!-- pr-size-labeler:xl-warning -->"
 XL_COMMENT_TEMPLATE = """{marker}
 **Large PR detected ({lines} lines changed)**
 
-This PR exceeds 1200 lines of code changes (excluding lock files and \
-generated content). Large PRs are harder to review thoroughly and are more \
-likely to introduce bugs.
+This PR exceeds 1200 lines of code changes (excluding lock files, \
+generated content, and images). Large PRs are harder to review thoroughly \
+and are more likely to introduce bugs.
 
 Consider splitting this PR into smaller, focused changes.
 """
