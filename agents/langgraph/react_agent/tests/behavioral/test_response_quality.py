@@ -22,6 +22,5 @@ async def test_plan_coherence(run_eval: Any) -> None:
     assert result.success, f"Agent request failed: {result.error}"
     score = score_plan_coherence(result)
     assert score.passed, (
-        f"Plan coherence check failed (score={score.value:.2f}): "
-        f"{score.details}"
+        f"Plan coherence check failed (score={score.value:.2f}): {score.details}"
     )
