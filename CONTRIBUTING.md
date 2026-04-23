@@ -14,6 +14,23 @@ Thank you for your interest in contributing. This document gives a short overvie
 
 Before submitting, please read our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold it.
 
+## Local development setup
+
+Install [pre-commit](https://pre-commit.com/) to run linters automatically before each commit:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+This enables local hooks for ruff (Python lint + format), markdownlint, actionlint, and general file hygiene checks. The same checks run in CI as a blocking gate on pull requests — installing pre-commit locally gives you faster feedback.
+
+To run all hooks manually against the entire repo:
+
+```bash
+pre-commit run --all-files
+```
+
 ## Commit message conventions
 
 We encourage [Conventional Commits](https://www.conventionalcommits.org/) so that history and release notes stay clear.
