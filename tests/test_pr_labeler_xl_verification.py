@@ -1,4 +1,4 @@
-# PR size labeling XL dedup verification
+# PR size labeling - verify no-op label cycle fix
 # Test function 0
 def test_placeholder_0():
     """Placeholder test 0 for PR size verification."""
