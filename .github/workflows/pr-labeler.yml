@@ -36,12 +36,18 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install PyGithub
+        run: pip install PyGithub==2.9.1
 
       - name: Apply size labels
+        id: size_labels
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: python .github/scripts/pr_size.py
+
+      - name: Warn if size labeling failed
+        if: steps.size_labels.outcome == 'failure'
+        run: |
+          echo "::warning::Size labeling failed; area labels were applied but size labels may be stale or missing."
