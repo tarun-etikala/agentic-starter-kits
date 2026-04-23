@@ -1,3 +1,4 @@
+# Push 2: same size bucket, expect no label churn
 # Test function 0
 def test_xl_retest_0():
     """XL retest placeholder 0."""
