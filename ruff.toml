@@ -5,6 +5,12 @@ line-length = 88
 select = ["E", "F", "I"]
 ignore = ["E501"]
 
+[lint.per-file-ignores]
+"**/main.py" = ["E402"]
+"**/examples/**" = ["E402"]
+"**/tests/**" = ["E402"]
+"**/mcp_automl_template/**" = ["E402"]
+
 [format]
 quote-style = "double"
 line-ending = "auto"

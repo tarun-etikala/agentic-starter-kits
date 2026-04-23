@@ -4,7 +4,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
-
 from register_tools import register_tools_from_config
 
 load_dotenv()
