@@ -14,6 +14,7 @@ from integration.utils import (
 logger = logging.getLogger(__name__)
 
 AGENT_NAME = "langgraph-react-agent"
+INTERNAL_REGISTRY = "image-registry.openshift-image-registry.svc:5000"
 
 
 @pytest.fixture(scope="module")
@@ -23,16 +24,17 @@ def agent_dir(repo_root):
 
 @pytest.fixture(scope="module")
 def deployed_agent(cluster_auth, agent_dir):
+    namespace = cluster_auth["namespace"]
+    container_image = f"{INTERNAL_REGISTRY}/{namespace}/{AGENT_NAME}:latest"
+    deploy_env = {"CONTAINER_IMAGE": container_image}
+
     deployed = False
     try:
-        logger.info("Building container image...")
-        run_make("build", cwd=agent_dir, timeout=600)
-
-        logger.info("Pushing container image...")
-        run_make("push", cwd=agent_dir, timeout=300)
+        logger.info("Building image on cluster via build-openshift...")
+        run_make("build-openshift", cwd=agent_dir, timeout=600)
 
         logger.info("Deploying to cluster...")
-        run_make("deploy", cwd=agent_dir, timeout=300)
+        run_make("deploy", cwd=agent_dir, timeout=300, env=deploy_env)
         deployed = True
 
         route_url = get_route(AGENT_NAME)
