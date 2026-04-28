@@ -17,6 +17,7 @@ permissions:
 jobs:
   verify-cluster-connection:
     name: "Verify Cluster Connection"
+    if: github.repository == 'red-hat-data-services/agentic-starter-kits'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
