@@ -21,7 +21,7 @@ This project uses [ruff](https://docs.astral.sh/ruff/) for Python linting and fo
 Run locally before pushing:
 
 ```bash
-pip install ruff
+uv tool install ruff==0.15.11
 ruff check .          # lint
 ruff format --check . # format check
 ruff format .         # auto-format
