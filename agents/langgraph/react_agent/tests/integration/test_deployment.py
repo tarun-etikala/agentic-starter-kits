@@ -50,7 +50,7 @@ def deployed_agent(cluster_auth, agent_dir):
         run_make("deploy", cwd=agent_dir, timeout=300)
         deployed = True
 
-        route_url = get_route(AGENT_NAME)
+        route_url = get_route(AGENT_NAME, namespace=namespace)
         logger.info("Agent deployed at %s", route_url)
 
         yield route_url

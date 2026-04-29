@@ -111,6 +111,8 @@ def health_check(
                 httpx.TimeoutException,
             ) as exc:
                 last_exc = exc
+                if attempt == retries - 1:
+                    break
                 wait = min(backoff * (2 ** attempt), 15.0)
                 logger.info(
                     "Health check attempt %d/%d failed, retrying in %.1fs: %s",
