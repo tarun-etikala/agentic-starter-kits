@@ -14,6 +14,21 @@ Thank you for your interest in contributing. This document gives a short overvie
 
 Before submitting, please read our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold it.
 
+## Linting and formatting
+
+This project uses [ruff](https://docs.astral.sh/ruff/) for Python linting and formatting. CI runs ruff as a blocking check on all pull requests.
+
+Run locally before pushing:
+
+```bash
+uv tool install ruff==0.15.11
+ruff check .          # lint
+ruff format --check . # format check
+ruff format .         # auto-format
+```
+
+Configuration is in [`ruff.toml`](ruff.toml) at the repo root.
+
 ## Commit message conventions
 
 We encourage [Conventional Commits](https://www.conventionalcommits.org/) so that history and release notes stay clear.
