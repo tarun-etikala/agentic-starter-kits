@@ -1,8 +1,7 @@
 # QG4: Agent Deployment Health Checks
 #
-# Foundation workflow: validates that the GitHub Actions runner can connect
-# to the OpenShift cluster. Agent deployment and health checks will be
-# wired up in follow-up tickets.
+# Nightly workflow: logs into the OpenShift demo cluster, deploys each
+# agent via build-openshift + Helm, validates GET /health, and tears down.
 
 name: "QG4: Agent Deployment Health Checks"
 
@@ -75,6 +74,59 @@ jobs:
           oc get all -n ci-testing --no-headers | head -10
           echo ""
           echo "Cluster connection verified successfully."
+
+      - name: Logout
+        if: always()
+        run: oc logout || true
+
+  test-langgraph-react-agent:
+    name: "LangGraph React Agent"
+    needs: verify-cluster-connection
+    if: github.repository == 'red-hat-data-services/agentic-starter-kits'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      API_KEY: "not-needed"
+      BASE_URL: "http://vllm-svc.llama-serving.svc:8000/v1"
+      MODEL_ID: "qwen2-5-7b-instruct"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@6b9c6063abd6010835644d4c2e1bef4cf5cd0fca # v6.0.1
+
+      - name: Install OpenShift CLI and Helm
+        uses: redhat-actions/openshift-tools-installer@144527c7d98999f2652264c048c7a9bd103f8a82 # v1.13.1
+        with:
+          oc: "4"
+          helm: "3"
+
+      - name: Login to OpenShift
+        env:
+          OC_TOKEN: ${{ secrets.OC_TOKEN }}
+          CLUSTER_API_URL: ${{ secrets.CLUSTER_API_URL }}
+        run: |
+          oc login \
+            --token="$OC_TOKEN" \
+            --server="$CLUSTER_API_URL" \
+            --namespace=ci-testing
+
+      - name: Run integration test
+        working-directory: agents/langgraph/react_agent
+        run: make test-integration
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6db9b8a1f7f0bc5b6a0bce0152916 # v4.6.2
+        with:
+          name: langgraph-react-agent-results
+          path: agents/langgraph/react_agent/results.xml
 
       - name: Logout
         if: always()
