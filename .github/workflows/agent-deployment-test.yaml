@@ -78,7 +78,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6db9b8a1f7f0bc5b6a0bce0152916 # v4.6.2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ${{ matrix.agent.name }}-results
           path: ${{ matrix.agent.dir }}/results.xml

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 
 import pytest
 
@@ -22,11 +23,23 @@ def agent_dir(repo_root):
     return repo_root / "agents" / "langgraph" / "react_agent"
 
 
+def _write_env_file(agent_dir, container_image):
+    """Write a .env file so Makefile targets can source it."""
+    env_path = agent_dir / ".env"
+    env_path.write_text(
+        f"API_KEY={os.environ.get('API_KEY', 'not-needed')}\n"
+        f"BASE_URL={os.environ['BASE_URL']}\n"
+        f"MODEL_ID={os.environ['MODEL_ID']}\n"
+        f"CONTAINER_IMAGE={container_image}\n"
+    )
+    return env_path
+
+
 @pytest.fixture(scope="module")
 def deployed_agent(cluster_auth, agent_dir):
     namespace = cluster_auth["namespace"]
     container_image = f"{INTERNAL_REGISTRY}/{namespace}/{AGENT_NAME}:latest"
-    deploy_env = {"CONTAINER_IMAGE": container_image}
+    env_path = _write_env_file(agent_dir, container_image)
 
     deployed = False
     try:
@@ -34,7 +47,7 @@ def deployed_agent(cluster_auth, agent_dir):
         run_make("build-openshift", cwd=agent_dir, timeout=600)
 
         logger.info("Deploying to cluster...")
-        run_make("deploy", cwd=agent_dir, timeout=300, env=deploy_env)
+        run_make("deploy", cwd=agent_dir, timeout=300)
         deployed = True
 
         route_url = get_route(AGENT_NAME)
@@ -52,6 +65,7 @@ def deployed_agent(cluster_auth, agent_dir):
                 run_make("undeploy", cwd=agent_dir, timeout=120)
             except MakeTargetError:
                 logger.warning("Cleanup failed — manual undeploy may be needed", exc_info=True)
+        env_path.unlink(missing_ok=True)
 
 
 @pytest.mark.integration
