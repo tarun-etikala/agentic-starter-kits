@@ -4,7 +4,6 @@ import logging
 import os
 
 import pytest
-
 from integration.utils import (
     MakeTargetError,
     get_route,
