@@ -3,7 +3,7 @@
 # Nightly workflow: logs into the OpenShift demo cluster, deploys each
 # agent via build-openshift + Helm, validates GET /health, and tears down.
 
-name: "QG4: Agent Deployment Health Checks"
+name: "QG4: Agent Deployment Integration Tests"
 
 on:
   schedule:
