@@ -1,6 +1,7 @@
 <div style="text-align: center;">
 
 ![Agentic Starter Kits](/images/ask_logo.png)
+
 # Agentic Starter Kits
 
 </div>
@@ -48,7 +49,7 @@ Agents in this repository can support two deployment modes:
 
 ## Repository Structure
 
-```
+```text
 agentic-starter-kits/
 ├── agents/
 │   ├── langgraph/
@@ -146,10 +147,10 @@ See `tests/behavioral/` for full details.
 
 ## Additional Resources
 
-- **Llama Stack Documentation**: https://llama-stack.readthedocs.io/
-- **Ollama Documentation**: https://docs.ollama.com/
-- **OpenShift Documentation**: https://docs.openshift.com/
-- **Kubernetes**: https://kubernetes.io/docs/
+- **Llama Stack Documentation**: <https://llama-stack.readthedocs.io/>
+- **Ollama Documentation**: <https://docs.ollama.com/>
+- **OpenShift Documentation**: <https://docs.openshift.com/>
+- **Kubernetes**: <https://kubernetes.io/docs/>
 
 ## Contributing
 
