@@ -36,8 +36,8 @@ Configuration is in [`ruff.toml`](ruff.toml) at the repo root.
 Run locally before pushing:
 
 ```bash
-npx markdownlint-cli2 "**/*.md"          # lint
-npx markdownlint-cli2 --fix "**/*.md"    # auto-fix
+npx markdownlint-cli2@0.22.1 "**/*.md"          # lint
+npx markdownlint-cli2@0.22.1 --fix "**/*.md"    # auto-fix
 ```
 
 Configuration is in [`.markdownlint.jsonc`](.markdownlint.jsonc) (rules) and [`.markdownlint-cli2.yaml`](.markdownlint-cli2.yaml) (ignored paths) at the repo root.

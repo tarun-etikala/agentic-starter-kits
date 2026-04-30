@@ -111,10 +111,10 @@ Configure the flow components:
 
 | Component        | Field      | Value                                     |
 |------------------|------------|-------------------------------------------|
-| KServe vLLM      | api_base   | <http://host.containers.internal:8321/v1>   |
+| KServe vLLM      | api_base   | `http://host.containers.internal:8321/v1`   |
 | KServe vLLM      | model_name | ollama/qwen2.5:7b                         |
 | KServe vLLM      | api_key    | not-needed-for-local-development          |
-| NPS Search Parks | api_key    | Get one free at <https://developer.nps.gov> |
+| NPS Search Parks | api_key    | Get one free at `https://developer.nps.gov` |
 | NPS Park Alerts  | api_key    | Same NPS key as above                     |
 
 ### Pointing to a locally hosted model
@@ -147,7 +147,7 @@ Run the agent from the Langflow UI by clicking the **Play** button.
 Langfuse v3 tracing is included in the local stack and starts automatically. No additional setup needed.
 
 - **Langfuse UI**: <http://localhost:3000>
-- **Login**: <admin@langflow.local> / password auto-generated in `local/.env`
+- **Login**: `admin@langflow.local` / password auto-generated in `local/.env`
 
 After running the agent, select the **Langflow Agent** project and click **Traces** to see agent executions — LLM calls,
 tool invocations, inputs, and outputs.
@@ -204,9 +204,9 @@ oc get inferenceservice --all-namespaces
 
       | Option | api_base | model_name |
             |--------|----------|------------|
-      | Via LlamaStack (external route) | https://\<llamastack-route-host\>/v1 | vllm//mnt/models |
-      | Via LlamaStack (internal) | <http://llamastack-service.\><namespace\>.svc.cluster.local:8321/v1 | vllm//mnt/models |
-      | Direct to KServe (internal) | http://\<model\>-predictor.\<namespace\>.svc.cluster.local:8080/v1 | /mnt/models |
+      | Via LlamaStack (external route) | `https://<llamastack-route-host>/v1` | vllm//mnt/models |
+      | Via LlamaStack (internal) | `http://llamastack-service.<namespace>.svc.cluster.local:8321/v1` | vllm//mnt/models |
+      | Direct to KServe (internal) | `http://<model>-predictor.<namespace>.svc.cluster.local:8080/v1` | /mnt/models |
 
       Use the external route if Langflow can't reach LlamaStack internally (network policy). Use `oc get routes` and
       `oc get inferenceservice` to find the actual hostnames and namespaces.
