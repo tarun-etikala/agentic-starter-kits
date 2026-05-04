@@ -39,9 +39,11 @@ class MakeTargetError(Exception):
 
 
 class RouteNotFoundError(Exception):
-    def __init__(self, agent_name: str):
+    def __init__(self, agent_name: str, stderr: str = ""):
         self.agent_name = agent_name
-        super().__init__(f"No route found for {agent_name}")
+        self.stderr = stderr
+        detail = f"\noc stderr: {stderr}" if stderr else ""
+        super().__init__(f"No route found for {agent_name}{detail}")
 
 
 class HealthCheckError(Exception):
@@ -100,7 +102,7 @@ def get_route(agent_name: str, namespace: str | None = None) -> str:
     host = result.stdout.strip()
 
     if result.returncode != 0 or not host:
-        raise RouteNotFoundError(agent_name)
+        raise RouteNotFoundError(agent_name, stderr=result.stderr.strip())
 
     return f"https://{host}"
 
