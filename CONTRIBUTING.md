@@ -61,7 +61,7 @@ This repository enforces the [Conventional Commits](https://www.conventionalcomm
 
 ### Format
 
-```
+```text
 <type>(optional scope): <description>
 
 [optional body]
@@ -102,11 +102,15 @@ feat!: change /chat response format
 
 For breaking changes, add `!` after the type/scope (e.g. `feat!:`) or include a `BREAKING CHANGE:` footer:
 
-```
+```text
 feat: change /chat response format
 
 BREAKING CHANGE: response field "text" renamed to "content"
 ```
+
+## Linking PRs to Jira
+
+This repository has GitHub + Jira integration enabled. When you include a Jira ticket ID (e.g. `RHAIENG-123`) in your PR title, branch name, commit message, or PR description, the pull request automatically appears under **Development** on the Jira issue. This gives visibility into which tickets have active or merged code without leaving Jira.
 
 ## Automated PR labels
 
