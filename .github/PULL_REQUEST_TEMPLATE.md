@@ -4,7 +4,7 @@
 
 ## Jira Ticket
 
-<!-- e.g. RHAIENG-123 -->
+<!-- e.g. RHAIENG-123. Include the ticket ID so the PR appears as a linked pull request on the Jira issue. -->
 
 ## Testing
 

@@ -108,6 +108,10 @@ feat: change /chat response format
 BREAKING CHANGE: response field "text" renamed to "content"
 ```
 
+## Linking PRs to Jira
+
+This repository has GitHub + Jira integration enabled. When you include a Jira ticket ID (e.g. `RHAIENG-123`) in your PR title, branch name, or the **Jira Ticket** field in the PR template, the pull request automatically appears under **Development** on the Jira issue. This gives the visibility into which tickets have active or merged code without leaving Jira.
+
 ## Automated PR labels
 
 Every pull request is automatically labeled when opened or updated:
