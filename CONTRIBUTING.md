@@ -61,7 +61,7 @@ This repository enforces the [Conventional Commits](https://www.conventionalcomm
 
 ### Format
 
-```
+```text
 <type>(optional scope): <description>
 
 [optional body]
@@ -102,7 +102,7 @@ feat!: change /chat response format
 
 For breaking changes, add `!` after the type/scope (e.g. `feat!:`) or include a `BREAKING CHANGE:` footer:
 
-```
+```text
 feat: change /chat response format
 
 BREAKING CHANGE: response field "text" renamed to "content"
