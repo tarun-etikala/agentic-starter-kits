@@ -69,9 +69,13 @@ General-purpose checks from [pre-commit/pre-commit-hooks](https://github.com/pre
 | `no-commit-to-branch` | Blocks direct commits to `main` |
 | `detect-private-key` | Catches accidentally committed private keys |
 
+### GitHub Actions workflow validation (actionlint)
+
+Validates `.github/workflows/` files using [actionlint](https://github.com/rhysd/actionlint). Only runs when workflow files are staged.
+
 ## Linting and formatting
 
-This project uses [ruff](https://docs.astral.sh/ruff/) for Python linting and formatting, and [markdownlint](https://github.com/DavidAnson/markdownlint) for Markdown linting. Both run as blocking CI checks on all pull requests via the `Code Quality` workflow.
+This project uses [ruff](https://docs.astral.sh/ruff/) (Python), [markdownlint](https://github.com/DavidAnson/markdownlint) (Markdown), and [actionlint](https://github.com/rhysd/actionlint) (GitHub Actions workflows). All three run as blocking CI checks on every pull request via the `Code Quality` workflow.
 
 ### Python (ruff)
 
