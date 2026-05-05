@@ -1,0 +1,176 @@
+# Claude Code Deployment for OpenShift
+#
+# This file contains all resources needed to deploy Claude Code on OpenShift.
+#
+# Before applying this manifest, create the credentials secret:
+#   oc create secret generic claude-credentials \
+#     --from-literal=ANTHROPIC_API_KEY="sk-ant-api03-YOUR_KEY_HERE"
+
+---
+# ImageStream to hold the built image
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: claude-code
+  labels:
+    app: claude-code
+spec:
+  lookupPolicy:
+    local: true
+
+---
+# BuildConfig to build from Containerfile
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: claude-code
+  labels:
+    app: claude-code
+spec:
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Containerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: claude-code:latest
+  triggers: []
+
+---
+# ConfigMap for optional MCP configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: claude-mcp-config
+  labels:
+    app: claude-code
+data:
+  config.json: |
+    {
+      "mcpServers": {}
+    }
+
+---
+# ConfigMap for skills (empty by default)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: claude-skills
+  labels:
+    app: claude-code
+data: {}
+
+---
+# PVC for workspace persistence (optional)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: claude-workspace
+  labels:
+    app: claude-code
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: claude-code
+  labels:
+    app: claude-code
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: claude-code
+  template:
+    metadata:
+      labels:
+        app: claude-code
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: claude-code
+          image: claude-code:latest
+          imagePullPolicy: Always
+          command: ["entrypoint.sh"]
+          args: ["sleep", "infinity"]  # Keep container running for exec access
+          env:
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: claude-credentials
+                  key: ANTHROPIC_API_KEY
+            # Uncomment for custom endpoint:
+            # - name: ANTHROPIC_BASE_URL
+            #   value: "https://your-endpoint/v1"
+            # - name: CLAUDE_MODEL
+            #   value: "your-model"
+            - name: MCP_CONFIG_FILE
+              value: "/etc/mcp/config.json"
+            - name: SKIP_PERMISSIONS
+              value: "true"  # Safe in sandboxed container
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: skills
+              mountPath: /opt/skills
+              readOnly: true
+            - name: mcp-config
+              mountPath: /etc/mcp
+              readOnly: true
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: claude-workspace
+        - name: skills
+          configMap:
+            name: claude-skills
+            optional: true
+        - name: mcp-config
+          configMap:
+            name: claude-mcp-config
+            optional: true
+
+---
+# Service (optional, for future gateway integration)
+apiVersion: v1
+kind: Service
+metadata:
+  name: claude-code
+  labels:
+    app: claude-code
+spec:
+  selector:
+    app: claude-code
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP

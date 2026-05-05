@@ -1,0 +1,218 @@
+# Claude Code Deployment for OpenShift - Vertex AI Authentication
+#
+# This deployment uses Google Vertex AI for Claude API access instead of
+# direct Anthropic API keys. It requires GCP credentials to be mounted.
+#
+# Prerequisites:
+# 1. A GCP service account with Vertex AI access
+# 2. Vertex AI API enabled in your GCP project
+#
+# Before applying this manifest, create the credentials secret:
+#   oc create secret generic claude-vertex-credentials \
+#     --from-file=key.json=/path/to/your-service-account-key.json
+
+---
+# ImageStream to hold the built image
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: claude-code
+  labels:
+    app: claude-code-vertex
+spec:
+  lookupPolicy:
+    local: true
+
+---
+# BuildConfig to build from Containerfile
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: claude-code
+  labels:
+    app: claude-code-vertex
+spec:
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Containerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: claude-code:latest
+  triggers: []
+
+---
+# ConfigMap for Vertex AI configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: claude-vertex-config
+  labels:
+    app: claude-code-vertex
+data:
+  # GCP Project ID with Vertex AI access to Claude
+  ANTHROPIC_VERTEX_PROJECT_ID: "YOUR_PROJECT_ID"
+  # Region for Vertex AI (us-east5, europe-west1, us, eu, or global)
+  CLOUD_ML_REGION: "global"
+
+---
+# ConfigMap for optional MCP configuration (shared with main deployment)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: claude-vertex-mcp-config
+  labels:
+    app: claude-code-vertex
+data:
+  config.json: |
+    {
+      "mcpServers": {}
+    }
+
+---
+# ConfigMap for skills (empty by default, shared pattern)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: claude-vertex-skills
+  labels:
+    app: claude-code-vertex
+data: {}
+
+---
+# PVC for workspace persistence
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: claude-vertex-workspace
+  labels:
+    app: claude-code-vertex
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+# Deployment with Vertex AI authentication
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: claude-code-vertex
+  labels:
+    app: claude-code-vertex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: claude-code-vertex
+  template:
+    metadata:
+      labels:
+        app: claude-code-vertex
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: claude-code
+          # Uses the same image as the main deployment
+          image: claude-code:latest
+          imagePullPolicy: Always
+          command: ["entrypoint.sh"]
+          args: ["sleep", "infinity"]  # Keep container running for exec access
+          env:
+            # ===========================================
+            # Vertex AI Authentication
+            # ===========================================
+            # Enable Vertex AI mode
+            - name: CLAUDE_CODE_USE_VERTEX
+              value: "1"
+            # GCP Project ID (from ConfigMap)
+            - name: ANTHROPIC_VERTEX_PROJECT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: claude-vertex-config
+                  key: ANTHROPIC_VERTEX_PROJECT_ID
+            # Vertex AI Region (from ConfigMap)
+            - name: CLOUD_ML_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: claude-vertex-config
+                  key: CLOUD_ML_REGION
+            # Path to GCP service account credentials
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/var/secrets/google/key.json"
+            # ===========================================
+            # Claude Code Configuration
+            # ===========================================
+            - name: MCP_CONFIG_FILE
+              value: "/etc/mcp/config.json"
+            - name: SKIP_PERMISSIONS
+              value: "true"  # Safe in sandboxed container
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: skills
+              mountPath: /opt/skills
+              readOnly: true
+            - name: mcp-config
+              mountPath: /etc/mcp
+              readOnly: true
+            # GCP credentials mount
+            - name: gcp-credentials
+              mountPath: /var/secrets/google
+              readOnly: true
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: claude-vertex-workspace
+        - name: skills
+          configMap:
+            name: claude-vertex-skills
+            optional: true
+        - name: mcp-config
+          configMap:
+            name: claude-vertex-mcp-config
+            optional: true
+        # GCP service account key
+        - name: gcp-credentials
+          secret:
+            secretName: claude-vertex-credentials
+
+---
+# Service (optional, for future gateway integration)
+apiVersion: v1
+kind: Service
+metadata:
+  name: claude-code-vertex
+  labels:
+    app: claude-code-vertex
+spec:
+  selector:
+    app: claude-code-vertex
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
