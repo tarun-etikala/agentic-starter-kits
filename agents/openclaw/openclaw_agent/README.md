@@ -88,7 +88,6 @@ oc apply -k manifests/
 | Namespace | `overlays/<env>/kustomization.yaml` (`namespace:` field) |
 | Gateway token | `manifests/01-secret.yaml` |
 | Resource limits | Patch `manifests/04-deployment.yaml` |
-| Codex Harness | `overlays/codex-harness/` (adds Codex app-server sidecar) |
 
 ## Docs
 
@@ -97,7 +96,6 @@ oc apply -k manifests/
 | [docs/installer-deployment.md](docs/installer-deployment.md) | Full deployment guide: prerequisites, validation, rollback, appendix |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Common issues and fixes (route 503, model override, heartbeat, config clobber) |
 | [docs/model-compatibility.md](docs/model-compatibility.md) | Model testing results for agentic tool-calling |
-| [docs/codex-harness.md](docs/codex-harness.md) | Codex Harness plugin — sidecar deployment, mixed models, guardian approvals |
 
 ## Related Projects
 

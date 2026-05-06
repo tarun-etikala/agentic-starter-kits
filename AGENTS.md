@@ -55,7 +55,7 @@ Several agents diverge significantly from the standard pattern:
 
 **a2a/langgraph_crewai_agent** - Uses `python:3.12-slim` (not UBI9), PYTHONPATH `/app` (not `/opt/app-root/src`), `charts/a2a-langgraph-crewai/` chart, `template.env` (not `.env.example`), `entrypoint.sh` (not `main.py`), Starlette (not FastAPI). No tests/ directory.
 
-**openclaw/openclaw_agent** - Kustomize-based deployment of OpenClaw on OpenShift. Uses pre-built image (`ghcr.io/openclaw/openclaw:latest`), not a Dockerfile. Kustomize overlays for customization (model endpoint, storage class, Codex Harness sidecar). No Makefile, no FastAPI, no src/. Port 18789 (gateway).
+**openclaw/openclaw_agent** - Kustomize-based deployment of OpenClaw on OpenShift. Uses pre-built image (`ghcr.io/openclaw/openclaw:latest`), not a Dockerfile. Kustomize overlays for customization (model endpoint, storage class). No Makefile, no FastAPI, no src/. Port 18789 (gateway).
 
 ## Common gotchas
 
