@@ -4,7 +4,7 @@ The [Codex Harness](https://docs.openclaw.ai/plugins/codex-harness) is a bundled
 
 ## How It Works
 
-```
+```text
 ┌──────────────────────────────────────────┐
 │              Pod                          │
 │                                           │
@@ -35,6 +35,7 @@ The [Codex Harness](https://docs.openclaw.ai/plugins/codex-harness) is a bundled
 | Self-hosted models via vLLM | `openai-compat/my-model` — no harness |
 
 The Codex harness is useful when you want:
+
 - Native Codex thread management and compaction
 - Guardian-reviewed tool approvals
 - Model discovery through Codex's catalog
@@ -167,17 +168,20 @@ The `coding-agent` routes through the Codex harness; the `general-agent` uses vL
 ### Codex sidecar not starting
 
 Check the sidecar logs:
+
 ```bash
 oc logs deployment/openclaw -c codex-app-server -n <namespace>
 ```
 
 Common issues:
+
 - Missing `OPENAI_API_KEY` — check the `codex-secrets` secret
 - Image pull failure — `ghcr.io/openai/codex-app-server:latest` is [not publicly available](#important-sidecar-image-availability) (returns 403). Use the direct OpenAI API fallback instead.
 
 ### Gateway can't connect to Codex
 
 If you see WebSocket connection errors in the gateway logs:
+
 ```bash
 oc logs deployment/openclaw -c gateway -n <namespace> | grep -i codex
 ```

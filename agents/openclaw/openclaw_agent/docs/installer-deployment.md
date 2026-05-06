@@ -32,7 +32,8 @@ oc version
 ```
 
 Expected output:
-```
+
+```text
 Client Version: 4.17.0
 ...
 ```
@@ -43,7 +44,8 @@ oc whoami
 ```
 
 Expected output:
-```
+
+```text
 <your-username>
 ```
 
@@ -53,7 +55,8 @@ node --version
 ```
 
 Expected output:
-```
+
+```text
 v22.x.x
 ```
 
@@ -63,14 +66,15 @@ oc get storageclass
 ```
 
 Expected output (look for a block storage class):
-```
+
+```text
 NAME            PROVISIONER       RECLAIMPOLICY   ...
 gp3-csi         ebs.csi.aws.com   Delete          ...
 ```
 
 ## Architecture Overview
 
-```
+```text
                      +-----------------------+
                      |   OpenShift Route     |
                      |   (TLS edge)          |
@@ -108,7 +112,8 @@ oc new-project <your-name>-openclaw
 ```
 
 Expected output:
-```
+
+```text
 Now using project "<your-name>-openclaw" on server "https://api.<your-cluster>:443".
 ```
 
@@ -121,7 +126,8 @@ npm install && npm run build && npm run dev
 ```
 
 Expected output:
-```
+
+```text
 > openclaw-installer@x.x.x dev
 > next dev
 
@@ -144,7 +150,8 @@ Open `http://localhost:3000`. The installer auto-detects your OpenShift cluster 
 Click **Deploy**. The installer streams logs as it creates each resource.
 
 Expected output (installer log panel):
-```
+
+```text
 Creating ServiceAccount...        ✓
 Creating Secrets...                ✓
 Creating ConfigMap...              ✓
@@ -162,7 +169,8 @@ oc get pods -n <namespace>
 ```
 
 Expected output:
-```
+
+```text
 NAME                       READY   STATUS    RESTARTS   AGE
 openclaw-xxxxxxxxxx-xxxxx  2/2     Running   0          60s
 ```
@@ -180,12 +188,14 @@ oc get route openclaw -n <namespace> -o jsonpath='{.spec.host}'
 Navigate to `https://<route-host>` in your browser. If you see "Application is not available", the TLS termination is misconfigured. See [troubleshooting.md](troubleshooting.md#route-returns-application-is-not-available-503).
 
 **Verification:**
+
 ```bash
 curl -s -o /dev/null -w "%{http_code}" -k https://$(oc get route openclaw -n <namespace> -o jsonpath='{.spec.host}')
 ```
 
 Expected output:
-```
+
+```text
 403
 ```
 
@@ -201,7 +211,8 @@ oc exec deployment/openclaw -n <namespace> -c gateway -- \
 ```
 
 Expected output:
-```
+
+```text
 Device approved: <request-id>
 ```
 
@@ -216,7 +227,8 @@ oc logs deployment/openclaw -c gateway -n <namespace> | grep "agent model"
 ```
 
 Expected output:
-```
+
+```text
 [gateway] agent model: openai-compat/gpt-oss-20b
 ```
 
@@ -250,7 +262,8 @@ oc logs deployment/openclaw -c gateway -n <namespace> | grep -E "(ready|agent mo
 ```
 
 Expected output:
-```
+
+```text
 [gateway] agent model: openai-compat/gpt-oss-20b
 [gateway] ready (4 plugins: ...; 3.xs)
 [heartbeat] disabled
@@ -271,7 +284,8 @@ oc get pvc -n <namespace>
 ```
 
 Expected:
-```
+
+```text
 NAME               STATUS   VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
 openclaw-home-pvc  Bound    ...      10Gi       RWO            gp3-csi        5m
 ```
@@ -426,8 +440,8 @@ oc scale deployment/openclaw --replicas=1 -n <namespace>
 
 | Resource | URL |
 |----------|-----|
-| OpenClaw Upstream | https://github.com/openclaw/openclaw |
-| openclaw-installer | https://github.com/sallyom/claw-installer |
-| OpenClaw Docs | https://docs.openclaw.ai |
-| OpenShift Docs | https://docs.openshift.com |
-| Kustomize | https://kustomize.io |
+| OpenClaw Upstream | <https://github.com/openclaw/openclaw> |
+| openclaw-installer | <https://github.com/sallyom/claw-installer> |
+| OpenClaw Docs | <https://docs.openclaw.ai> |
+| OpenShift Docs | <https://docs.openshift.com> |
+| Kustomize | <https://kustomize.io> |
