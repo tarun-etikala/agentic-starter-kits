@@ -220,7 +220,8 @@ Look for: `Config overwrite` or `Config observe anomaly` messages.
 
 ```bash
 oc scale deployment/openclaw --replicas=0 -n <namespace>
-oc delete pvc openclaw-home-pvc -n <namespace>
+oc delete pvc openclaw-state -n <namespace>
+# If deployed via claw-installer, the PVC is named openclaw-home-pvc instead
 # Redeploy via installer or re-apply manifests
 oc scale deployment/openclaw --replicas=1 -n <namespace>
 ```
@@ -283,11 +284,13 @@ unauthorized ... reason=rate_limited
    - Or: DevTools (F12) → Application → Storage → "Clear site data"
 
 2. **Restart the pod** to reset the in-memory rate limiter:
+
    ```bash
    oc rollout restart deployment/openclaw -n <namespace>
    ```
 
 3. **Refresh the browser** — you should now see a fresh device pairing prompt. Approve it:
+
    ```bash
    oc exec deployment/openclaw -c gateway -n <namespace> -- \
      openclaw devices approve <request-id>
