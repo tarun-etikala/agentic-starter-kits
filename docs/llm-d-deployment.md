@@ -4,7 +4,7 @@ Deploy multiple vLLM instances across separate GPU nodes with llm-d orchestratin
 
 ## Architecture
 
-```
+```text
 Client → Llama Stack (optional) → Gateway → llm-d scheduler → vLLM pods (N x GPU nodes)
 ```
 
