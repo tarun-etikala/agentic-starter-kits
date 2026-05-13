@@ -27,7 +27,7 @@ queries:
     category: add
 
   # --- Single tool: sub ---
-  - query: "Please use the subtract tool to find the difference between 1000000 and 734291"
+  - query: "Please use the sub tool to find the difference between 1000000 and 734291"
     expected_tools: ["sub"]
     expected_elements: ["265709"]
     difficulty: medium
