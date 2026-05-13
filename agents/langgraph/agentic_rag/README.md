@@ -38,6 +38,14 @@ cd agents/langgraph/agentic_rag
 make init
 ```
 
+### Creating environment
+
+Now you will remove old .venv and create new. Next dependencies will be installed.
+
+```bash
+make env
+```
+
 ### Tracing (optional)
 
 Tracing is optional. If MLflow tracing is required, enable it by uncommenting and setting the following environment variables in the `.env` file.
@@ -107,14 +115,6 @@ DOCS_TO_LOAD=./data/sample_knowledge.txt
 - `VECTOR_STORE_PROVIDER` - Vector store backend: `milvus` for local development (default), `pgvector` for OpenShift deployments.
 - `VECTOR_STORE_PATH` - Absolute path where the Milvus Lite database will be stored. Not used when `VECTOR_STORE_PROVIDER=pgvector`.
 - `DOCS_TO_LOAD` - Path to the text file containing documents to load into the vector store. A sample file is provided at `./data/sample_knowledge.txt`.
-
-### Creating environment
-
-Now you will remove old .venv and create new. Next dependencies will be installed.
-
-```bash
-make env
-```
 
 ### Setup Ollama
 
