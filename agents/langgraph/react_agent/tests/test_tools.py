@@ -90,5 +90,11 @@ def test_tool_works_with_langchain_invoke():
     assert search_result is not None
 
 
+def test_deliberate_failure_for_ci_validation():
+    """This test is intentionally broken to verify CI failure reporting."""
+    result = dummy_web_search.invoke({"query": "test"})
+    assert "THIS_SHOULD_NOT_EXIST" in result
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
