@@ -1,6 +1,6 @@
 def dummy_web_search(query: str) -> list[str]:
     """
-    Web search tool that return static list of strings.
+    Web search tool that returns a static list of strings.
 
     Args:
         query: User query to search in web.

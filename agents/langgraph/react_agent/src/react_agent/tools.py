@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 class SearchInput(BaseModel):
     """Schema for the search tool input."""
 
-    query: str = Field(description="The value to search for.")
+    query: str = Field(description="The search query string to look up on the web.")
 
 
 @tool("search", parse_docstring=True)
