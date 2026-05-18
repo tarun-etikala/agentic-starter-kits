@@ -3,10 +3,8 @@ name: Agent Tests
 on:
   push:
     branches: [main]
-    paths: ['agents/**']
   pull_request:
     branches: [main]
-    paths: ['agents/**']
   workflow_dispatch:
 
 permissions:
@@ -18,8 +16,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      agents: ${{ steps.filter.outputs.agents }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
+
+      - name: Check for agent changes
+        id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36  # v3.0.2
+        with:
+          filters: |
+            agents:
+              - 'agents/**'
+
   test:
     name: Unit Tests
+    needs: changes
+    if: needs.changes.outputs.agents == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -93,3 +111,13 @@ jobs:
           check_name: Agent Test Results
           include_passed: true
           annotate_only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+
+  skip:
+    name: Unit Tests
+    needs: changes
+    if: needs.changes.outputs.agents != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: No agent changes
+        run: echo "No agent files changed — skipping tests."
