@@ -208,7 +208,7 @@ oc adm policy add-role-to-user edit -z default -n <your-namespace>
 
 ```yaml
 - name: MLFLOW_TRACKING_URI
-  value: "https://mlflow.redhat-ods-applications.svc:8443"
+  value: "https://mlflow.<your-rhoai-namespace>.svc:8443"  # namespace where MLflow is deployed (commonly redhat-ods-applications)
 - name: MLFLOW_TRACKING_AUTH
   value: "kubernetes-namespaced"
 - name: MLFLOW_WORKSPACE
@@ -216,7 +216,7 @@ oc adm policy add-role-to-user edit -z default -n <your-namespace>
 - name: MLFLOW_EXPERIMENT_NAME
   value: "claude-code-traces"
 - name: MLFLOW_TRACKING_INSECURE_TLS
-  value: "true"
+  value: "true"  # for dev/test only — production deployments should use proper TLS certificates
 ```
 
 #### 4. Add OGX env vars to point Claude Code at OGX
@@ -225,7 +225,7 @@ oc adm policy add-role-to-user edit -z default -n <your-namespace>
 - name: ANTHROPIC_BASE_URL
   value: "https://<your-ogx-route>"
 - name: ANTHROPIC_API_KEY
-  value: "fake"
+  value: "fake"  # OGX does not validate API keys for self-hosted models, any non-empty string works
 - name: ANTHROPIC_CUSTOM_MODEL_OPTION
   value: "vllm/<your-model-name>"
 ```
