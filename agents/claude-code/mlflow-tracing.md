@@ -204,6 +204,8 @@ RUN python3.12 -m pip install --no-cache-dir \
 oc adm policy add-role-to-user edit -z default -n <your-namespace>
 ```
 
+> For production, use a dedicated service account with least-privilege RBAC scoped to the permissions MLflow's `kubernetes-namespaced` auth plugin requires.
+
 #### 3. Add MLflow env vars to the deployment
 
 ```yaml
