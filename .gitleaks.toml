@@ -1,0 +1,14 @@
+# Gitleaks configuration for agentic-starter-kits
+# https://github.com/gitleaks/gitleaks
+
+[extend]
+useDefault = true
+
+[allowlist]
+  description = "Global allowlist for false positives"
+
+  regexTarget = "match"
+  regexes = [
+    # curl + sed piped examples in README files trigger the curl-auth-user rule
+    '''s/\^data: //''',
+  ]
