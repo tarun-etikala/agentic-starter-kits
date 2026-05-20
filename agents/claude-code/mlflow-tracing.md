@@ -8,7 +8,7 @@ Deploy Claude Code as a containerized agent on Red Hat OpenShift AI and wire it 
 
 ### Summary
 
-Agent-level instrumentation via `mlflow autolog claude` works out of the box with any backend. Swapping Vertex AI for vLLM or OGX produces the same trace schema with no changes to the tracing setup. If server-side OGX OTel spans are needed in future, they would be added to the Claude Code stop hook.
+Agent-level instrumentation via `mlflow autolog claude` works out of the box with any backend. Swapping Vertex AI for vLLM or OGX produces the same trace schema with no changes to the tracing setup. If server-side metrics are needed in future (e.g. per-hop latency, routing decisions), those would come from OGX or vLLM emitting their own OTel spans — the Claude Code hook only captures local agent-side data.
 
 ### OGX Telemetry Capabilities
 
@@ -47,7 +47,7 @@ This works the same whether the backend is Vertex AI, vLLM directly, or OGX → 
 
 ### Integration Path
 
-The Claude Code stop hook is the right integration path. It already captures everything out of the box — tool calls, token usage, latency, session ID — and works the same across Vertex AI, vLLM, and OGX without any changes. If additional server-side metrics are needed (e.g. per-hop vLLM latency, OGX routing decisions), they can be added directly to the same hook since the infrastructure is already there.
+The Claude Code stop hook is the right integration path for agent-level tracing. It captures tool calls, token usage, latency, and session ID out of the box — and works the same across Vertex AI, vLLM, and OGX without any changes. If additional server-side metrics are needed (e.g. per-hop vLLM latency, OGX routing decisions), those would require OGX or vLLM to emit their own OTel spans separately.
 
 ---
 
@@ -146,11 +146,11 @@ MLflow integration works. Follow this guide to hook Claude Code, OGX, and MLflow
 
 The following must already be running on the cluster:
 
-- Claude Code container deployed (see [agents/claude/claude_agent](https://github.com/red-hat-data-services/agentic-starter-kits/tree/main/agents/claude/claude_agent))
+- Claude Code container deployed (see [deployment/deployment.yaml](deployment/deployment.yaml))
 - OGX deployed and serving a model
 - MLflow instance running via the ODH/RHOAI operator with a workspace matching your namespace
 
-### Step-by-Step Setup
+### Step-by-Step Setup (following the [deployment guide](deployment/README.md), adding MLflow-specific steps below)
 
 #### 1. Add Python + MLflow to the Containerfile
 
@@ -198,7 +198,7 @@ oc adm policy add-role-to-user edit -z default -n <your-namespace>
   value: "vllm/<your-model-name>"
 ```
 
-#### 5. Wire up autolog in the entrypoint
+#### 5. Wire up autolog in the [entrypoint](deployment/entrypoint.sh)
 
 The entrypoint runs `mlflow autolog claude` at startup and injects auth into the generated `.claude/settings.json`:
 
