@@ -31,6 +31,15 @@ If you haven't run `pre-commit install --install-hooks`, hooks will **not** run 
 pre-commit run --all-files
 ```
 
+## Dependency management
+
+Every agent directory that has a `pyproject.toml` must also contain a committed `uv.lock` file so that builds are fully reproducible. When adding a new agent or modifying dependencies:
+
+1. **Use bounded version ranges** for framework-level packages (e.g. `>=1.2.0,<2.0.0`) to prevent surprise major-version upgrades. Stable, low-risk packages (e.g. `python-dotenv`) can use floor-only pins.
+2. **Run `uv lock`** in the agent directory after any `pyproject.toml` change to regenerate the lock file.
+3. **Run `uv lock --check`** to verify the lock file is consistent with `pyproject.toml` before committing.
+4. **Commit `uv.lock`** alongside `pyproject.toml` changes — never `.gitignore` it.
+
 ## Pre-commit hooks
 
 The following hooks run automatically on every commit. They are defined in [`.pre-commit-config.yaml`](.pre-commit-config.yaml).
