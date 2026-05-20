@@ -172,7 +172,7 @@ oc adm policy add-role-to-user edit -z default -n <your-namespace>
 
 > For production, use a dedicated service account with least-privilege RBAC scoped to the permissions MLflow's `kubernetes-namespaced` auth plugin requires.
 
-#### 3. Add MLflow env vars to the deployment
+#### 3. Add MLflow env vars to the [deployment](https://github.com/red-hat-data-services/agentic-starter-kits/blob/main/agents/claude-code/deployment/deployment.yaml)
 
 ```yaml
 - name: MLFLOW_TRACKING_URI
