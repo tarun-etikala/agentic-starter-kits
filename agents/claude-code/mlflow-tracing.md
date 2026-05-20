@@ -146,11 +146,11 @@ MLflow integration works. Follow this guide to hook Claude Code, OGX, and MLflow
 
 The following must already be running on the cluster:
 
-- Claude Code container deployed (see [deployment/deployment.yaml](deployment/deployment.yaml))
+- Claude Code container deployed (see [deployment.yaml](https://github.com/red-hat-data-services/agentic-starter-kits/blob/main/agents/claude-code/deployment/deployment.yaml))
 - OGX deployed and serving a model
 - MLflow instance running via the ODH/RHOAI operator with a workspace matching your namespace
 
-### Step-by-Step Setup (following the [deployment guide](deployment/README.md), adding MLflow-specific steps below)
+### Step-by-Step Setup (following the [deployment guide](https://github.com/red-hat-data-services/agentic-starter-kits/blob/main/agents/claude-code/deployment/README.md), adding MLflow-specific steps below)
 
 #### 1. Add Python + MLflow to the Containerfile
 
@@ -198,7 +198,7 @@ oc adm policy add-role-to-user edit -z default -n <your-namespace>
   value: "vllm/<your-model-name>"
 ```
 
-#### 5. Wire up autolog in the [entrypoint](deployment/entrypoint.sh)
+#### 5. Wire up autolog in the [entrypoint](https://github.com/red-hat-data-services/agentic-starter-kits/blob/main/agents/claude-code/deployment/entrypoint.sh)
 
 The entrypoint runs `mlflow autolog claude` at startup and injects auth into the generated `.claude/settings.json`:
 
