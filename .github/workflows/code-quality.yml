@@ -49,6 +49,17 @@ jobs:
         with:
           version: 1.7.12
 
+  secret-scanning:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+        with:
+          fetch-depth: 0
+
       - name: Gitleaks
         env:
           GITLEAKS_VERSION: "8.30.1"
