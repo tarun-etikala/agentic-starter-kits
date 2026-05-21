@@ -182,6 +182,8 @@ gcloud iam service-accounts keys create ~/claude-vertex-key.json \
 
 If you already have credentials via `gcloud auth application-default login`, you can use your ADC file (typically at `~/.config/gcloud/application_default_credentials.json`) in place of a service account key. Substitute this path wherever the instructions reference your service account key file.
 
+**Important:** ADC credentials are user-scoped and typically carry broader permissions than a dedicated service account. Use ADC for local development and testing only. For shared or production clusters, create a least-privilege service account with only the **Vertex AI User** role as described above.
+
 ### 1. Build and test locally
 
 ```bash
@@ -226,6 +228,12 @@ oc apply -f deployment-vertex.yaml
 ```bash
 oc patch configmap claude-vertex-config \
   -p '{"data":{"ANTHROPIC_VERTEX_PROJECT_ID":"your-gcp-project-id","CLOUD_ML_REGION":"global"}}'
+```
+
+Restart the deployment so pods pick up the patched ConfigMap values:
+
+```bash
+oc rollout restart deployment/claude-code-vertex
 ```
 
 ### 5. Build the image on OpenShift
