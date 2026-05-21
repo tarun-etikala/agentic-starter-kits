@@ -4,7 +4,17 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    groups:
+      patch:
+        applies-to: "version-updates"
+        update-types:
+          - "patch"
+      minor:
+        applies-to: "version-updates"
+        update-types:
+          - "minor"
 
   - package-ecosystem: "pip"
     directories:
@@ -12,4 +22,20 @@ updates:
       - "/agents/**/*"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    groups:
+      patch:
+        applies-to: "version-updates"
+        dependency-type: "production"
+        update-types:
+          - "patch"
+      minor:
+        applies-to: "version-updates"
+        dependency-type: "production"
+        update-types:
+          - "minor"
+      dev-dependencies:
+        applies-to: "version-updates"
+        dependency-type: "development"
