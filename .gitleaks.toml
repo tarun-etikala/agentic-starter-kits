@@ -3,12 +3,3 @@
 
 [extend]
 useDefault = true
-
-[allowlist]
-  description = "Global allowlist for false positives"
-
-  regexTarget = "match"
-  regexes = [
-    # curl + sed piped examples in README files trigger the curl-auth-user rule
-    '''s/\^data: //''',
-  ]
