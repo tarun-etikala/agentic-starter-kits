@@ -11,7 +11,7 @@
 ## What this agent does
 
 Minimal agent with no framework: only the OpenAI Python client and an Action/Observation loop with tools. Requires the
-[OpenAI Responses API](https://platform.openai.com/docs/api-reference/responses/create) — works with OpenAI or any
+[OpenAI Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create) — works with OpenAI or any
 endpoint that supports the Responses API.
 
 ---
@@ -29,7 +29,7 @@ endpoint that supports the Responses API.
 
 ## Local Development
 
-> **Note:** This agent uses the [OpenAI Responses API](https://platform.openai.com/docs/api-reference/responses/create),
+> **Note:** This agent uses the [OpenAI Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create),
 > which is specific to OpenAI. It does not use Ollama or Llama Stack for local model serving.
 
 ### Initiating base
@@ -268,4 +268,4 @@ curl http://localhost:8000/health
 ## Resources
 
 - [OpenAI Python Client](https://github.com/openai/openai-python)
-- [OpenAI Responses API](https://platform.openai.com/docs/api-reference/responses/create)
+- [OpenAI Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create)

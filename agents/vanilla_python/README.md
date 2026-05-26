@@ -11,4 +11,4 @@ Agent templates using plain Python SDK clients (e.g. [OpenAI Python client](http
 ## Resources
 
 - [OpenAI Python Client](https://github.com/openai/openai-python)
-- [OpenAI Responses API](https://platform.openai.com/docs/api-reference/responses/create)
+- [OpenAI Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create)
