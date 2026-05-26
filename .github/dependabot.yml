@@ -36,6 +36,9 @@ updates:
         dependency-type: "production"
         update-types:
           - "minor"
-      dev-dependencies:
+      dev-patch-minor:
         applies-to: "version-updates"
         dependency-type: "development"
+        update-types:
+          - "patch"
+          - "minor"
