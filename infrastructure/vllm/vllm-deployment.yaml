@@ -21,6 +21,12 @@ spec:
         effect: NoSchedule
       containers:
       - name: vllm
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          capabilities:
+            drop:
+              - ALL
         # vLLM 0.13.0+rhai19 from RHOAI — verify compatibility with your RHOAI version
         image: registry.redhat.io/rhaiis/vllm-cuda-rhel9@sha256:2ebb2ffb49a2a270d4f634c22e81ee2b8da038063df4957ecbd3c9e66ee57491
         command:
@@ -77,7 +83,7 @@ spec:
         - name: NCCL_P2P_DISABLE
           value: "0"
         - name: VLLM_LOGGING_LEVEL
-          value: "DEBUG"
+          value: "INFO"
         readinessProbe:
           httpGet:
             path: /health

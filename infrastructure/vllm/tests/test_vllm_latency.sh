@@ -69,7 +69,7 @@ BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
 
-curl_opts=(-s --max-time "$VLLM_TIMEOUT")
+curl_opts=(-s --fail --max-time "$VLLM_TIMEOUT")
 if [[ "$VLLM_INSECURE" == "true" ]]; then
   curl_opts+=(-k)
 fi
@@ -114,7 +114,10 @@ run_nonstream() {
   local start_ns end_ns elapsed_ms
   start_ns=$(date +%s%N 2>/dev/null || python3 -c "import time; print(int(time.time()*1e9))")
   local resp
-  resp=$(curl "${curl_opts[@]}" -H "Content-Type: application/json" "$endpoint" -d "$payload" 2>/dev/null)
+  if ! resp=$(curl "${curl_opts[@]}" -H "Content-Type: application/json" "$endpoint" -d "$payload" 2>/dev/null); then
+    echo "FAIL 0 0 0"
+    return
+  fi
   end_ns=$(date +%s%N 2>/dev/null || python3 -c "import time; print(int(time.time()*1e9))")
   elapsed_ms=$(( (end_ns - start_ns) / 1000000 ))
 
@@ -172,6 +175,12 @@ run_stream() {
   local chunk_count
   chunk_count=$(grep -c "^data: {" "$tmpfile" 2>/dev/null || echo "0")
 
+  if [[ "$chunk_count" -eq 0 ]]; then
+    rm -f "$tmpfile" "${tmpfile}.first"
+    echo "FAIL 0 0 0"
+    return
+  fi
+
   local tps=0
   if [[ "$total_ms" -gt 0 && "$chunk_count" -gt 0 ]]; then
     tps=$(echo "scale=1; $chunk_count * 1000 / $total_ms" | bc)
@@ -185,38 +194,53 @@ run_stream() {
 bench() {
   local test_name="$1" api="$2" streaming="$3" payload="$4" max_tokens="$5"
 
-  local sum_time=0 sum_ttfb=0 sum_pt=0 sum_ct=0 sum_tps=0
+  local sum_time=0 sum_ttfb=0 sum_pt=0 sum_ct=0 sum_tps=0 success_count=0
 
   for ((i=1; i<=VLLM_RUNS; i++)); do
     if [[ "$streaming" == "false" ]]; then
       read -r elapsed pt ct tps <<< "$(run_nonstream "$api" "$payload")"
+      if [[ "$elapsed" == "FAIL" ]]; then
+        echo -e "  ${DIM}Run $i: FAILED — request error${NC}"
+        continue
+      fi
       sum_time=$((sum_time + elapsed))
       sum_pt=$((sum_pt + pt))
       sum_ct=$((sum_ct + ct))
       sum_tps=$(echo "$sum_tps + $tps" | bc)
+      ((success_count++))
       echo -e "  ${DIM}Run $i: ${elapsed}ms | prompt=$pt completion=$ct | $tps tok/s${NC}"
     else
       read -r ttfb total chunks tps <<< "$(run_stream "$api" "$payload")"
+      if [[ "$ttfb" == "FAIL" ]]; then
+        echo -e "  ${DIM}Run $i: FAILED — request error${NC}"
+        continue
+      fi
       sum_ttfb=$((sum_ttfb + ttfb))
       sum_time=$((sum_time + total))
       sum_ct=$((sum_ct + chunks))
       sum_tps=$(echo "$sum_tps + $tps" | bc)
+      ((success_count++))
       echo -e "  ${DIM}Run $i: TTFB=${ttfb}ms total=${total}ms | $chunks chunks | $tps chunk/s${NC}"
     fi
   done
 
+  if [[ "$success_count" -eq 0 ]]; then
+    echo -e "  ${BOLD}All $VLLM_RUNS runs failed — skipping${NC}"
+    return
+  fi
+
   local avg_time avg_ttfb avg_pt avg_ct avg_tps
-  avg_time=$((sum_time / VLLM_RUNS))
-  avg_ttfb=$((sum_ttfb / VLLM_RUNS))
-  avg_pt=$((sum_pt / VLLM_RUNS))
-  avg_ct=$((sum_ct / VLLM_RUNS))
-  avg_tps=$(echo "scale=1; $sum_tps / $VLLM_RUNS" | bc)
+  avg_time=$((sum_time / success_count))
+  avg_ttfb=$((sum_ttfb / success_count))
+  avg_pt=$((sum_pt / success_count))
+  avg_ct=$((sum_ct / success_count))
+  avg_tps=$(echo "scale=1; $sum_tps / $success_count" | bc)
 
   if [[ "$streaming" == "false" ]]; then
-    echo -e "  ${BOLD}Avg: ${avg_time}ms | prompt=$avg_pt completion=$avg_ct | $avg_tps tok/s${NC}"
+    echo -e "  ${BOLD}Avg: ${avg_time}ms | prompt=$avg_pt completion=$avg_ct | $avg_tps tok/s ($success_count/$VLLM_RUNS runs)${NC}"
     add_result "$test_name" "$api" "false" "$avg_pt" "$avg_ct" "0" "$avg_time" "$avg_tps" "tok/s"
   else
-    echo -e "  ${BOLD}Avg: TTFB=${avg_ttfb}ms total=${avg_time}ms | $avg_ct chunks | $avg_tps chunk/s${NC}"
+    echo -e "  ${BOLD}Avg: TTFB=${avg_ttfb}ms total=${avg_time}ms | $avg_ct chunks | $avg_tps chunk/s ($success_count/$VLLM_RUNS runs)${NC}"
     add_result "$test_name" "$api" "true" "0" "$avg_ct" "$avg_ttfb" "$avg_time" "$avg_tps" "chunk/s"
   fi
 }
