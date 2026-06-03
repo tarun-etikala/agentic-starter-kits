@@ -10,8 +10,6 @@
 #   - MLflow tokens have been refreshed (run deploy-agents --token-only first)
 #
 # Requirements: oc, uv, curl, jq
-#
-# DO NOT add this file to source control.
 
 set -euo pipefail
 
@@ -125,6 +123,41 @@ preflight() {
     die "'uv' not found in PATH. Install it: https://docs.astral.sh/uv/"
   fi
   ok "uv found: $(uv --version 2>/dev/null || echo 'unknown version')"
+
+  # Validate AGENTS env vars match conftest._AGENT_URL_MAP
+  log "Validating agent config against conftest..."
+  local conftest_vars
+  conftest_vars=$(python3 -c "
+import sys, importlib.util
+spec = importlib.util.spec_from_file_location('conftest', '${REPO_ROOT}/tests/behavioral/conftest.py')
+mod = importlib.util.module_from_spec(spec)
+sys.modules['conftest'] = mod
+spec.loader.exec_module(mod)
+for v in mod._AGENT_URL_MAP.values():
+    print(v)
+" 2>/dev/null || true)
+
+  if [[ -n "$conftest_vars" ]]; then
+    local script_vars=""
+    for agent_tuple in "${AGENTS[@]}"; do
+      script_vars+="$(agent_env_var "$agent_tuple")"$'\n'
+    done
+    local missing=""
+    while IFS= read -r var; do
+      if ! echo "$script_vars" | grep -qF "$var"; then
+        missing+="  $var"$'\n'
+      fi
+    done <<< "$conftest_vars"
+    if [[ -n "$missing" ]]; then
+      warn "conftest._AGENT_URL_MAP has env vars not in AGENTS array:"
+      echo -e "${YELLOW}${missing}${RESET}"
+      warn "Update AGENTS in this script to match conftest.py"
+    else
+      ok "AGENTS array in sync with conftest._AGENT_URL_MAP"
+    fi
+  else
+    warn "Could not validate against conftest (python3 import failed)"
+  fi
 
   # Cluster domain — detect from any route in the namespace
   log "Detecting cluster domain..."
