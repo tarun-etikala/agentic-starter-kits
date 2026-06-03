@@ -123,11 +123,19 @@ run_nonstream() {
 
   local prompt_tokens completion_tokens
   if [[ "$api" == "anthropic" ]]; then
-    prompt_tokens=$(echo "$resp" | jq -r '.usage.input_tokens // 0')
-    completion_tokens=$(echo "$resp" | jq -r '.usage.output_tokens // 0')
+    if ! echo "$resp" | jq -e '.usage.input_tokens != null and .usage.output_tokens != null' >/dev/null 2>&1; then
+      echo "FAIL 0 0 0"
+      return
+    fi
+    prompt_tokens=$(echo "$resp" | jq -r '.usage.input_tokens')
+    completion_tokens=$(echo "$resp" | jq -r '.usage.output_tokens')
   else
-    prompt_tokens=$(echo "$resp" | jq -r '.usage.prompt_tokens // 0')
-    completion_tokens=$(echo "$resp" | jq -r '.usage.completion_tokens // 0')
+    if ! echo "$resp" | jq -e '.usage.prompt_tokens != null and .usage.completion_tokens != null' >/dev/null 2>&1; then
+      echo "FAIL 0 0 0"
+      return
+    fi
+    prompt_tokens=$(echo "$resp" | jq -r '.usage.prompt_tokens')
+    completion_tokens=$(echo "$resp" | jq -r '.usage.completion_tokens')
   fi
 
   local tps=0
@@ -175,7 +183,14 @@ run_stream() {
   local chunk_count
   chunk_count=$(grep -c "^data: {" "$tmpfile" 2>/dev/null || echo "0")
 
-  if [[ "$chunk_count" -eq 0 ]]; then
+  local stream_complete="false"
+  if [[ "$api" == "anthropic" ]]; then
+    grep -q '"type":"message_stop"' "$tmpfile" 2>/dev/null && stream_complete="true"
+  else
+    grep -q '^data: \[DONE\]' "$tmpfile" 2>/dev/null && stream_complete="true"
+  fi
+
+  if [[ "$chunk_count" -eq 0 || "$stream_complete" != "true" ]]; then
     rm -f "$tmpfile" "${tmpfile}.first"
     echo "FAIL 0 0 0"
     return
