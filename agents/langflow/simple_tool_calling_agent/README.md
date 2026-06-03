@@ -278,6 +278,7 @@ uv run --extra test python -m pytest agents/langflow/simple_tool_calling_agent/t
 | `LANGFLOW_FLOW_ID` | Flow ID — changes on re-import, discover via `GET /api/v1/flows/` |
 
 **Differences from standard agents:**
+
 - No MLflow enrichment — tool calls are extracted from Langflow response `content_blocks`
 - Uses `api_format="langflow_run"` and `flow_id` in TaskConfig (harness adapter from RHAIENG-5389)
 - No streaming support — always `stream=False`
