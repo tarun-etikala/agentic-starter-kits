@@ -139,7 +139,8 @@ def _extract_token_usage(response_data: dict[str, Any]) -> int | None:
 def _get_langflow_output(response_data: dict[str, Any]) -> dict[str, Any] | None:
     """Navigate to the first output node from a Langflow /api/v1/run response."""
     try:
-        return response_data["outputs"][0]["outputs"][0]
+        output = response_data["outputs"][0]["outputs"][0]
+        return output if isinstance(output, dict) else None
     except (KeyError, IndexError, TypeError):
         return None
 
