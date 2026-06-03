@@ -25,6 +25,8 @@ _AGENT_URL_MAP = {
     "crewai_websearch": "CREWAI_WEBSEARCH_AGENT_URL",
     "agentic_rag": "AGENTIC_RAG_AGENT_URL",
     "langgraph_db_memory": "DB_MEMORY_AGENT_URL",
+    "autogen_mcp": "AUTOGEN_MCP_AGENT_URL",
+    "llamaindex_websearch": "LLAMAINDEX_WEBSEARCH_AGENT_URL",
 }
 
 
