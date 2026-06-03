@@ -252,6 +252,37 @@ secrets:
 2. If you already exported with keys included, you can strip them manually by searching for `"api_key"` fields in the
    JSON and clearing their `"value"` entries
 
+## Behavioral Tests
+
+Behavioral tests validate tool selection accuracy, response quality, latency, and reliability against the live agent.
+Tests are under `tests/behavioral/` and run from the **repo root** (test deps are in the root `pyproject.toml`).
+
+```bash
+cd /path/to/agentic-starter-kits
+
+# Check tests are discovered
+uv run --extra test python -m pytest agents/langflow/simple_tool_calling_agent/tests/behavioral/ --collect-only
+
+# Run against live agent
+LANGFLOW_AGENT_URL=https://langflow-langflow-agent.apps.rosa.agen-e2e-rhoai2.p5ui.p3.openshiftapps.com \
+LANGFLOW_FLOW_ID=fadd303c-8e65-4e0b-b9ea-6d93b0bba255 \
+uv run --extra test python -m pytest agents/langflow/simple_tool_calling_agent/tests/behavioral/ -v
+
+# Exclude slow reliability tests
+uv run --extra test python -m pytest agents/langflow/simple_tool_calling_agent/tests/behavioral/ -v -m "not slow"
+```
+
+| Env var | Description |
+|---------|-------------|
+| `LANGFLOW_AGENT_URL` | Langflow instance URL (default: cluster route) |
+| `LANGFLOW_FLOW_ID` | Flow ID — changes on re-import, discover via `GET /api/v1/flows/` |
+
+**Differences from standard agents:**
+- No MLflow enrichment — tool calls are extracted from Langflow response `content_blocks`
+- Uses `api_format="langflow_run"` and `flow_id` in TaskConfig (harness adapter from RHAIENG-5389)
+- No streaming support — always `stream=False`
+- Lower thresholds than standard agents (smaller model + external API latency)
+
 ## Resources
 
 - [Langflow Documentation](https://docs.langflow.org/)

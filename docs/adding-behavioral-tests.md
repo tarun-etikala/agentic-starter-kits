@@ -60,6 +60,7 @@ See existing agent implementations for working examples:
 - `agents/crewai/websearch_agent/tests/behavioral/conftest.py`
 - `agents/langgraph/agentic_rag/tests/behavioral/conftest.py`
 - `agents/langgraph/react_with_database_memory/tests/behavioral/conftest.py`
+- `agents/langflow/simple_tool_calling_agent/tests/behavioral/conftest.py` (Langflow: no MLflow, uses `api_format="langflow_run"` + `flow_id`)
 
 ## 3. Add Thresholds
 
@@ -112,6 +113,7 @@ See the existing implementations for reference:
 - `agents/langgraph/agentic_rag/tests/behavioral/` (single tool: `retriever`)
 - `agents/langgraph/react_with_database_memory/tests/behavioral/` (single tool: `search` + PostgreSQL memory)
 - `agents/llamaindex/websearch_agent/tests/behavioral/` (single tool: `dummy_web_search`)
+- `agents/langflow/simple_tool_calling_agent/tests/behavioral/` (three tools: `get_forecast`, `search_parks`, `park_alerts` — Langflow `api_format`)
 
 ## 6. Register the Agent Marker
 
