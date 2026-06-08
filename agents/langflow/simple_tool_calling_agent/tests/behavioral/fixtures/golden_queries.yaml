@@ -3,7 +3,7 @@
 # The agent has three tools:
 #   get_forecast   — Open-Meteo weather API
 #   search_parks   — NPS park search API
-#   park_alerts    — NPS park alerts API
+#   get_alerts     — NPS park alerts API
 #
 # Tool calls are extracted from the Langflow /api/v1/run response
 # content_blocks (not MLflow traces). The model is qwen2.5-7b-instruct
@@ -46,6 +46,33 @@ queries:
     expected_elements: ["forecast"]
     difficulty: hard
     category: ambiguous
+
+  # --- Easy: park_alerts (single tool) ---
+  - query: "Are there any alerts or closures at Yellowstone right now?"
+    expected_tools: ["get_alerts"]
+    expected_elements: ["yellowstone"]
+    difficulty: easy
+    category: factual
+
+  - query: "Check for hazard warnings at Grand Canyon National Park"
+    expected_tools: ["get_alerts"]
+    expected_elements: ["grand canyon"]
+    difficulty: easy
+    category: factual
+
+  # --- Medium: multi-tool with get_alerts ---
+  - query: "Find national parks in Utah and check if any of them have active closures or alerts"
+    expected_tools: ["search_parks", "get_alerts"]
+    expected_elements: ["utah"]
+    difficulty: medium
+    category: multi_part
+
+  # --- Hard: all three tools ---
+  - query: "I'm planning a trip to Colorado this weekend. Find parks nearby, check the weather forecast, and let me know if there are any park alerts I should be aware of"
+    expected_tools: ["search_parks", "get_forecast", "get_alerts"]
+    expected_elements: ["colorado"]
+    difficulty: hard
+    category: multi_part
 
   # --- Greeting (no tools) ---
   - query: "Hello!"

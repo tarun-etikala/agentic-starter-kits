@@ -260,12 +260,12 @@ Tests are under `tests/behavioral/` and run from the **repo root** (test deps ar
 ```bash
 cd /path/to/agentic-starter-kits
 
-# Check tests are discovered
+# Check tests are discovered (no env vars needed — flow_id validated at runtime)
 uv run --extra test python -m pytest agents/langflow/simple_tool_calling_agent/tests/behavioral/ --collect-only
 
 # Run against live agent
-LANGFLOW_AGENT_URL=https://langflow-langflow-agent.apps.rosa.agen-e2e-rhoai2.p5ui.p3.openshiftapps.com \
-LANGFLOW_FLOW_ID=fadd303c-8e65-4e0b-b9ea-6d93b0bba255 \
+LANGFLOW_AGENT_URL=<langflow-url> \
+LANGFLOW_FLOW_ID=<flow-id> \
 uv run --extra test python -m pytest agents/langflow/simple_tool_calling_agent/tests/behavioral/ -v
 
 # Exclude slow reliability tests
@@ -274,8 +274,8 @@ uv run --extra test python -m pytest agents/langflow/simple_tool_calling_agent/t
 
 | Env var | Description |
 |---------|-------------|
-| `LANGFLOW_AGENT_URL` | Langflow instance URL (default: cluster route) |
-| `LANGFLOW_FLOW_ID` | Flow ID — changes on re-import, discover via `GET /api/v1/flows/` |
+| `LANGFLOW_AGENT_URL` | Langflow instance URL (default: `http://localhost:7860`) |
+| `LANGFLOW_FLOW_ID` | **Required.** Flow ID — changes on re-import, discover via `GET /api/v1/flows/` |
 
 **Differences from standard agents:**
 

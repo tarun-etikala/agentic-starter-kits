@@ -48,15 +48,19 @@ def eval_config() -> dict[str, Any]:
         return yaml.safe_load(f)
 
 
-TOOL_OUTPUT_EVIDENCE = ["°c", "°f", "precipitation", "km/h", "national park", "nps.gov"]
+TOOL_OUTPUT_EVIDENCE = [
+    "°c",
+    "°f",
+    "precipitation",
+    "km/h",
+    "national park",
+    "nps.gov",
+    "alert",
+    "closure",
+]
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 STREAM = False
-FLOW_ID = os.environ.get("LANGFLOW_FLOW_ID", "")
-if not FLOW_ID:
-    raise EnvironmentError(
-        "LANGFLOW_FLOW_ID is required — discover via GET /api/v1/flows/"
-    )
 
 
 def load_golden(category: str | None = None) -> list[dict[str, Any]]:
@@ -65,9 +69,18 @@ def load_golden(category: str | None = None) -> list[dict[str, Any]]:
 
 
 @pytest.fixture
+def flow_id() -> str:
+    """Langflow flow ID from env var — required for test execution."""
+    fid = os.environ.get("LANGFLOW_FLOW_ID", "")
+    if not fid:
+        pytest.skip("LANGFLOW_FLOW_ID is required — discover via GET /api/v1/flows/")
+    return fid
+
+
+@pytest.fixture
 def known_tools() -> list[str]:
     """Tools available on the Langflow Simple Tool Calling agent."""
-    return ["get_forecast", "search_parks", "park_alerts"]
+    return ["get_forecast", "search_parks", "get_alerts"]
 
 
 @pytest.fixture
@@ -78,7 +91,7 @@ def langflow_tool_calling_thresholds(eval_config: dict[str, Any]) -> dict[str, A
 
 @pytest.fixture
 def run_eval(
-    agent_url: str, http_client: httpx.AsyncClient
+    agent_url: str, http_client: httpx.AsyncClient, flow_id: str
 ) -> Callable[..., Coroutine[Any, Any, TaskResult]]:
     """Run eval against the Langflow agent.
 
@@ -102,7 +115,7 @@ def run_eval(
             model=model,
             stream=STREAM,
             api_format="langflow_run",
-            flow_id=FLOW_ID,
+            flow_id=flow_id,
         )
         result = await run_task(config, client=http_client)
         return result

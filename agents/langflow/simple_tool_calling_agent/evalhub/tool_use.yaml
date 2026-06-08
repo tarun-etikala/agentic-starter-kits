@@ -17,6 +17,14 @@ queries:
     expected_tools: ["get_forecast", "search_parks"]
     expected_elements: ["forecast"]
 
+  - query: "Are there any alerts or closures at Yellowstone right now?"
+    expected_tools: ["get_alerts"]
+    expected_elements: ["yellowstone"]
+
+  - query: "Find national parks in Utah and check if any of them have active closures or alerts"
+    expected_tools: ["search_parks", "get_alerts"]
+    expected_elements: ["utah"]
+
   - query: "Hello!"
     expected_tools: []
     expected_elements: []

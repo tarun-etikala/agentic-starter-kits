@@ -4,7 +4,7 @@ Validates that the agent selects, calls, and uses tools correctly
 for various query types. The agent has three tools:
   get_forecast   — Open-Meteo weather API
   search_parks   — NPS park search API
-  park_alerts    — NPS park alerts API
+  get_alerts     — NPS park alerts API
 
 Tool calls are extracted from the Langflow /api/v1/run response
 content_blocks by the harness runner — no MLflow enrichment needed.

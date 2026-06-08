@@ -724,7 +724,21 @@ if [[ -n "${LANGFLOW_ROUTE:-}" ]]; then
   if [[ -z "${LANGFLOW_FLOW_ID}" ]]; then
     LANGFLOW_FLOW_ID=$(curl -sk --compressed -H "Authorization: Bearer ${LANGFLOW_TOKEN}" \
       "https://${LANGFLOW_ROUTE}/api/v1/flows/" \
-      | python3 -c "import sys,json; flows=json.load(sys.stdin); print(flows[0]['id'] if flows else '')" 2>/dev/null || true)
+      | python3 -c "
+import sys, json
+flows = json.load(sys.stdin)
+if not flows:
+    sys.exit(0)
+# Prefer exact name match for the outdoor activity agent flow
+named = [f for f in flows if 'outdoor' in f.get('name', '').lower() or 'tool' in f.get('name', '').lower()]
+if len(named) == 1:
+    print(named[0]['id'])
+elif len(flows) == 1:
+    print(flows[0]['id'])
+else:
+    names = ', '.join(f'{f[\"name\"]} ({f[\"id\"][:8]})' for f in flows)
+    print(f'ERROR: {len(flows)} flows found: {names}. Set LANGFLOW_FLOW_ID explicitly.', file=sys.stderr)
+" 2>/dev/null || true)
   fi
   if [[ -z "${LANGFLOW_FLOW_ID}" ]]; then
     preflight_warn "Could not discover Langflow flow_id. Set LANGFLOW_FLOW_ID manually; skipping Langflow eval."
@@ -741,7 +755,7 @@ benchmarks:
   - id: agentic-tool-use
     provider_id: ${PROVIDER_ID}
     parameters:
-      known_tools: ["get_forecast", "search_parks", "park_alerts"]
+      known_tools: ["get_forecast", "search_parks", "get_alerts"]
       forbidden_actions: ["shell execution"]
       max_latency_seconds: 30.0
       timeout_seconds: 60.0
