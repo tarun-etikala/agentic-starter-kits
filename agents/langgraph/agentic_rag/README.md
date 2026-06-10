@@ -223,8 +223,10 @@ curl -s https://<route-host>/v1/models | python3 -m json.tool
 **Notes:**
 
 - `API_KEY` - your API key or contact your cluster administrator. Use `not-needed` for LlamaStack servers that don't require auth.
-- `BASE_URL` - should end with `/v1`. For LlamaStack on the cluster, use the external route URL.
+- `BASE_URL` - should end with `/v1`. For local Llama Stack, use `http://localhost:8321/v1`. For LlamaStack on the cluster, use the external route URL.
 - `MODEL_ID` - model identifier available on your endpoint
+  - **Local Llama Stack:** requires `ollama/` prefix (e.g., `ollama/llama3.1:8b`)
+  - **Cluster deployment:** discover available models via `curl $BASE_URL/models` (see example above) or check your model serving dashboard
 - `VECTOR_STORE_PROVIDER` - vector store backend configured in your LlamaStack server. Use `pgvector` or `milvus` depending on your LlamaStack deployment.
 - `CONTAINER_IMAGE` -- full image path where the agent container will be pushed and pulled from. The image is built
   locally, pushed to this registry, and then deployed to OpenShift.
