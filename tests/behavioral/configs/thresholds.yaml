@@ -40,3 +40,10 @@ llamaindex_websearch:
   response_coherence_accuracy: 0.75
   max_latency_p95: 15.0
   pass_at_k: 8
+
+langflow_tool_calling:
+  tool_selection_accuracy: 0.75
+  multi_tool_accuracy: 0.65
+  response_coherence_accuracy: 0.70
+  max_latency_p95: 30.0
+  pass_at_k: 8

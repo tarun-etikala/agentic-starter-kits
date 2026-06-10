@@ -138,6 +138,8 @@ Tests require a running agent. Set the target URL via environment variables:
 | `AGENTIC_RAG_AGENT_URL` | LangGraph Agentic RAG agent tests |
 | `DB_MEMORY_AGENT_URL` | LangGraph DB Memory agent tests |
 | `LLAMAINDEX_WEBSEARCH_AGENT_URL` | LlamaIndex Websearch agent tests |
+| `LANGFLOW_AGENT_URL` | Langflow Simple Tool Calling agent tests |
+| `LANGFLOW_FLOW_ID` | Langflow flow ID (changes on re-import) |
 
 ```bash
 uv pip install -e ".[test]"

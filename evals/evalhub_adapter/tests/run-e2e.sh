@@ -106,6 +106,7 @@ REQUIRED_FILES=(
   "agents/langgraph/agentic_rag/evalhub/tool_use.yaml"
   "agents/langgraph/react_with_database_memory/evalhub/tool_use.yaml"
   "agents/llamaindex/websearch_agent/evalhub/tool_use.yaml"
+  "agents/langflow/simple_tool_calling_agent/evalhub/tool_use.yaml"
 )
 for f in "${REQUIRED_FILES[@]}"; do
   if [[ -f "${REPO_ROOT}/${f}" ]]; then
@@ -230,6 +231,19 @@ else
   preflight_ok "LlamaIndex Websearch agent route (override): ${LLAMAINDEX_WEBSEARCH_ROUTE}"
 fi
 
+# Langflow agent route — lives in a separate namespace (langflow-agent)
+LANGFLOW_NAMESPACE="${LANGFLOW_NAMESPACE:-langflow-agent}"
+if [[ -z "${LANGFLOW_ROUTE:-}" ]]; then
+  LANGFLOW_ROUTE=$(oc get route -n "${LANGFLOW_NAMESPACE}" langflow -o jsonpath='{.spec.host}' 2>/dev/null || true)
+  if [[ -n "${LANGFLOW_ROUTE}" ]]; then
+    preflight_ok "Langflow agent route: ${LANGFLOW_ROUTE}"
+  else
+    preflight_warn "Could not discover Langflow route in ${LANGFLOW_NAMESPACE}. Set LANGFLOW_ROUTE manually."
+  fi
+else
+  preflight_ok "Langflow agent route (override): ${LANGFLOW_ROUTE}"
+fi
+
 if [[ -z "${MLFLOW_TRACKING_URI:-}" ]]; then
   MLFLOW_TRACKING_URI=$(oc get deployment -n "${OC_NAMESPACE}" -o jsonpath='{.items[*].spec.template.spec.containers[0].env[?(@.name=="MLFLOW_TRACKING_URI")].value}' 2>/dev/null | awk '{print $1}' || true)
   if [[ -z "${MLFLOW_TRACKING_URI}" ]]; then
@@ -338,6 +352,14 @@ if [[ -n "${LLAMAINDEX_WEBSEARCH_ROUTE:-}" ]]; then
     preflight_ok "llamaindex_websearch_agent /health responded"
   else
     preflight_warn "llamaindex_websearch_agent /health not reachable (https://${LLAMAINDEX_WEBSEARCH_ROUTE}/health)"
+  fi
+fi
+
+if [[ -n "${LANGFLOW_ROUTE:-}" ]]; then
+  if curl -sf --max-time 10 "https://${LANGFLOW_ROUTE}/health" > /dev/null 2>&1; then
+    preflight_ok "langflow_tool_calling_agent /health responded"
+  else
+    preflight_warn "langflow_tool_calling_agent /health not reachable (https://${LANGFLOW_ROUTE}/health)"
   fi
 fi
 
@@ -694,6 +716,61 @@ EOF
 
 echo "  Created: eval-llamaindex-websearch-agent.yaml"
 
+# Langflow agent — discover flow_id dynamically and obtain auth token
+if [[ -n "${LANGFLOW_ROUTE:-}" ]]; then
+  LANGFLOW_TOKEN=$(curl -sk --compressed "https://${LANGFLOW_ROUTE}/api/v1/auto_login" \
+    | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null || true)
+  LANGFLOW_FLOW_ID="${LANGFLOW_FLOW_ID:-}"
+  if [[ -z "${LANGFLOW_FLOW_ID}" ]]; then
+    LANGFLOW_FLOW_ID=$(curl -sk --compressed -H "Authorization: Bearer ${LANGFLOW_TOKEN}" \
+      "https://${LANGFLOW_ROUTE}/api/v1/flows/" \
+      | python3 -c "
+import sys, json
+flows = json.load(sys.stdin)
+if not flows:
+    sys.exit(0)
+# Prefer exact name match for the outdoor activity agent flow
+named = [f for f in flows if 'outdoor' in f.get('name', '').lower() or 'tool' in f.get('name', '').lower()]
+if len(named) == 1:
+    print(named[0]['id'])
+elif len(flows) == 1:
+    print(flows[0]['id'])
+else:
+    names = ', '.join(f'{f[\"name\"]} ({f[\"id\"][:8]})' for f in flows)
+    print(f'ERROR: {len(flows)} flows found: {names}. Set LANGFLOW_FLOW_ID explicitly.', file=sys.stderr)
+" 2>/dev/null || true)
+  fi
+  if [[ -z "${LANGFLOW_FLOW_ID}" ]]; then
+    preflight_warn "Could not discover Langflow flow_id. Set LANGFLOW_FLOW_ID manually; skipping Langflow eval."
+  else
+    preflight_ok "Langflow flow_id: ${LANGFLOW_FLOW_ID}"
+
+cat > "${WORK_DIR}/eval-langflow-tool-calling-agent.yaml" <<EOF
+name: agentic-tool-use-langflow-tool-calling-agent
+description: EvalHub orchestration run for Langflow Simple Tool Calling agent
+model:
+  name: langflow-tool-calling-agent
+  url: https://${LANGFLOW_ROUTE}
+benchmarks:
+  - id: agentic-tool-use
+    provider_id: ${PROVIDER_ID}
+    parameters:
+      known_tools: ["get_forecast", "search_parks", "get_alerts"]
+      forbidden_actions: ["shell execution"]
+      max_latency_seconds: 30.0
+      timeout_seconds: 60.0
+      verify_ssl: true
+      fixtures_path: fixtures/langflow_tool_calling
+      api_format: langflow_run
+      flow_id: ${LANGFLOW_FLOW_ID}
+      mlflow_tracking_uri: ${MLFLOW_INTERNAL_URI}
+      mlflow_experiment_name: ${MLFLOW_EXPERIMENT}
+      mlflow_trace_experiment_name: ${MLFLOW_AGENT_EXPERIMENT}
+EOF
+    echo "  Created: eval-langflow-tool-calling-agent.yaml"
+  fi
+fi
+
 # ---------------------------------------------------------------------------
 # Step 6 — Submit jobs and wait
 # ---------------------------------------------------------------------------
@@ -788,6 +865,22 @@ for line in sys.stdin:
         break
 " 2>/dev/null || true)
 
+LANGFLOW_JOB_ID=""
+if [[ -f "${WORK_DIR}/eval-langflow-tool-calling-agent.yaml" ]]; then
+  echo ""
+  echo "=== Step 6: Submitting langflow_tool_calling_agent eval ==="
+  LANGFLOW_OUTPUT=$(evalhub eval run --config "${WORK_DIR}/eval-langflow-tool-calling-agent.yaml" --wait --poll-interval 5 2>&1)
+  echo "${LANGFLOW_OUTPUT}"
+  LANGFLOW_JOB_ID=$(echo "${LANGFLOW_OUTPUT}" | python3 -c "
+import sys, re
+for line in sys.stdin:
+    m = re.search(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', line)
+    if m:
+        print(m.group())
+        break
+" 2>/dev/null || true)
+fi
+
 # ---------------------------------------------------------------------------
 # Step 7 — Check results
 # ---------------------------------------------------------------------------
@@ -859,6 +952,10 @@ echo ""
 print_results "db_memory_agent" "${DB_MEMORY_JOB_ID:-}"
 echo ""
 print_results "llamaindex_websearch_agent" "${LLAMAINDEX_JOB_ID:-}"
+if [[ -n "${LANGFLOW_JOB_ID:-}" ]]; then
+  echo ""
+  print_results "langflow_tool_calling_agent" "${LANGFLOW_JOB_ID:-}"
+fi
 
 # ---------------------------------------------------------------------------
 # Cleanup
