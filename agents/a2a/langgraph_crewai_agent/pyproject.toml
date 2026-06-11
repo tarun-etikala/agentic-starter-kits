@@ -6,14 +6,14 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "a2a-sdk[http-server]>=0.3.25,<1.0.0",
-    "crewai[litellm]>=1.10.1,<2.0.0",
-    "litellm>=1.50.0,!=1.82.7,!=1.82.8,<2.0.0", # Block compromised PyPI releases
-    "httpx>=0.28.1,<1.0.0",
-    "langchain>=1.2.10,<2.0.0",
-    "langchain-openai>=1.1.10,<2.0.0",
-    "langgraph-prebuilt>=1.0.8,<2.0.0",
+    "crewai[litellm]>=1.10.1",
+    "litellm>=1.83.0",
+    "httpx>=0.28.1",
+    "langchain>=1.2.10",
+    "langchain-openai>=1.1.10",
+    "langgraph-prebuilt>=1.0.8",
     "python-dotenv>=1.0.0",
-    "uvicorn[standard]>=0.30.0,<1.0.0",
+    "uvicorn[standard]>=0.30.0",
     "starlette>=1.0.1",
 ]
 

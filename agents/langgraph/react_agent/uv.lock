@@ -3116,17 +3116,17 @@ tracing = [
 requires-dist = [
     { name = "chardet", specifier = ">=7.1.0" },
     { name = "datasets", marker = "extra == 'eval'", specifier = "==3.6.0" },
-    { name = "fastapi", specifier = ">=0.135.1,<1.0.0" },
-    { name = "flask", specifier = ">=3.1.0,<4.0.0" },
+    { name = "fastapi", specifier = ">=0.135.1" },
+    { name = "flask", specifier = ">=3.1.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27" },
-    { name = "langchain", specifier = ">=1.2.10,<2.0.0" },
-    { name = "langchain-openai", specifier = ">=1.1.10,<2.0.0" },
-    { name = "langgraph-prebuilt", specifier = ">=1.0.8,<2.0.0" },
-    { name = "llama-stack", specifier = ">=0.5.0,<1.0.0" },
+    { name = "langchain", specifier = ">=1.2.10" },
+    { name = "langchain-openai", specifier = ">=1.1.10" },
+    { name = "langgraph-prebuilt", specifier = ">=1.0.8" },
+    { name = "llama-stack", specifier = ">=0.5.0" },
     { name = "milvus-lite", specifier = ">=2.5.1" },
     { name = "mlflow", marker = "extra == 'tracing'", specifier = ">=3.10.0" },
     { name = "nltk", marker = "extra == 'eval'", specifier = ">=3.9.1" },
-    { name = "openai", specifier = ">=2.24.0,<3.0.0" },
+    { name = "openai", specifier = ">=2.24.0" },
     { name = "pymilvus", specifier = "==2.6.9" },
     { name = "pypdf", specifier = ">=6.9.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.2" },
@@ -3135,7 +3135,7 @@ requires-dist = [
     { name = "setuptools", specifier = ">=80.9.0,<83.0.0" },
     { name = "starlette", specifier = ">=1.0.1" },
     { name = "unitxt", marker = "extra == 'eval'", specifier = ">=1.24.0" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.41.0,<1.0.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.41.0" },
 ]
 provides-extras = ["dev", "eval", "tracing"]
 

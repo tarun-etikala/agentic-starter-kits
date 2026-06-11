@@ -2646,18 +2646,18 @@ tracing = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fastapi", specifier = ">=0.135.1,<1.0.0" },
-    { name = "flask", specifier = ">=3.1.0,<4.0.0" },
-    { name = "llama-index", specifier = ">=0.14.15,<1.0.0" },
-    { name = "llama-index-llms-openai-like", specifier = ">=0.5.3,<1.0.0" },
-    { name = "llama-index-utils-workflow", specifier = ">=0.5.2,<1.0.0" },
+    { name = "fastapi", specifier = ">=0.135.1" },
+    { name = "flask", specifier = ">=3.1.0" },
+    { name = "llama-index", specifier = ">=0.14.15" },
+    { name = "llama-index-llms-openai-like", specifier = ">=0.5.3" },
+    { name = "llama-index-utils-workflow", specifier = ">=0.5.2" },
     { name = "mlflow", marker = "extra == 'tracing'", specifier = ">=3.10.0" },
     { name = "nest-asyncio", specifier = ">=1.6.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.2" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "setuptools", specifier = ">=80.9.0,<83.0.0" },
     { name = "starlette", specifier = ">=1.0.1" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.41.0,<1.0.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.41.0" },
 ]
 provides-extras = ["dev", "tracing"]
 
