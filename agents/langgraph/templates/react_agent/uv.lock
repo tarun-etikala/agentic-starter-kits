@@ -14,7 +14,7 @@ wheels = [
 [[package]]
 name = "agent-auth"
 version = "0.1.0"
-source = { directory = "../../../components/auth" }
+source = { directory = "../../../../components/auth" }
 dependencies = [
     { name = "kubernetes" },
     { name = "starlette" },
@@ -3171,7 +3171,7 @@ tracing = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agent-auth", marker = "extra == 'auth'", directory = "../../../components/auth" },
+    { name = "agent-auth", marker = "extra == 'auth'", directory = "../../../../components/auth" },
     { name = "chardet", specifier = ">=7.1.0" },
     { name = "datasets", marker = "extra == 'eval'", specifier = "==3.6.0" },
     { name = "fastapi", specifier = ">=0.135.1" },
