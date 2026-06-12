@@ -80,7 +80,7 @@ General-purpose checks from [pre-commit/pre-commit-hooks](https://github.com/pre
 
 ### Lock file sync (uv-lock)
 
-Runs `uv lock --check` on any modified `pyproject.toml` and auto-updates the corresponding `uv.lock` if it's stale. The commit will fail with "files were modified by this hook" — simply re-commit to include the updated lock file.
+Runs `uv lock` on any modified `pyproject.toml` and auto-updates the corresponding `uv.lock` if it's stale. The commit will fail with "files were modified by this hook" — simply re-commit to include the updated lock file.
 
 ### GitHub Actions workflow validation (actionlint)
 

@@ -128,8 +128,8 @@ Add a `uv-lock` entry for your agent in `.pre-commit-config.yaml` under the `ast
 ```yaml
       - id: uv-lock
         name: uv-lock (<framework>/<your_agent>)
-        files: ^agents/<framework>/<your_agent>/pyproject\.toml$
-        args: [--project, agents/<framework>/<your_agent>]
+        files: ^agents/<framework>/templates/<your_agent>/pyproject\.toml$
+        args: [--project, agents/<framework>/templates/<your_agent>]
 ```
 
 This ensures the lock file is auto-updated whenever `pyproject.toml` changes. See [CONTRIBUTING.md](../CONTRIBUTING.md#dependency-management) for details.
