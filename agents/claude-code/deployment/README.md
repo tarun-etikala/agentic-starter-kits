@@ -1093,3 +1093,49 @@ oc delete configmap claude-ogx-vllm-skills
 oc delete pvc claude-ogx-vllm-workspace
 oc delete project my-claude-project
 ```
+
+---
+
+## Running in an OpenShell Sandbox
+
+To run Claude Code inside an [OpenShell](https://github.com/NVIDIA/OpenShell-Community) sandbox, use the `Containerfile.openshell` instead of the standard `Containerfile`. This builds on the shared base image (`sandboxes/base/`) and adds Node.js and Claude Code on top.
+
+### Build the OpenShell-compatible image
+
+```bash
+podman build --platform linux/amd64 -t claude-sandbox:latest -f Containerfile.openshell .
+```
+
+### Create a sandbox
+
+Using an OpenShell provider (recommended — credentials are managed by the gateway and never exposed to the agent):
+
+```bash
+# Create a provider once (stored in the gateway, reusable across sandboxes)
+openshell provider create \
+  --name claude \
+  --type claude-code \
+  --credential ANTHROPIC_API_KEY=sk-...
+
+# Create sandboxes using the provider
+openshell sandbox create --from claude-sandbox:latest --provider claude
+```
+
+Or by passing the API key directly as an environment variable:
+
+```bash
+openshell sandbox create --from claude-sandbox:latest -e ANTHROPIC_API_KEY=sk-...
+```
+
+### What `Containerfile.openshell` does
+
+Builds on the shared base image (`quay.io/hmoghani/openshell-base`) which provides the `sandbox` user, system packages, and OpenShell entrypoint. This flavor adds:
+
+- Node.js and npm (from UBI repos)
+- Claude Code via native installer (proprietary, version pinned)
+
+### Notes
+
+- OpenShell's supervisor takes over as PID 1 and does not automatically run the image's entrypoint. The agent starts inside the sandbox shell.
+- Build with `--platform linux/amd64` when targeting x86_64 clusters from Apple Silicon machines.
+- Tested on OpenShell v0.0.58, OpenShift 4.21 (June 2026).
