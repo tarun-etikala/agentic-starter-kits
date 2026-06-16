@@ -8,7 +8,7 @@
 
 ## Purpose
 
-Production-ready starter kits for building and deploying AI agents on Red Hat OpenShift. Each kit is a self-contained agent with a Makefile, Dockerfile, Helm chart, and docs - pick a framework, build locally, and deploy to OpenShift without stitching together boilerplate. Includes agents built with LangGraph, CrewAI, LlamaIndex, Google ADK, AutoGen, Langflow, A2A, and vanilla Python. Also includes OpenShift deployment guides for Claude Code and OpenClaw.
+Production-ready starter kits for building and deploying AI agents on Red Hat OpenShift. Each kit is a self-contained agent with docs and deployment configs - most include a Makefile, Dockerfile, and Helm chart so you can build locally and deploy to OpenShift without stitching together boilerplate. Includes agents built with LangGraph, CrewAI, LlamaIndex, Google ADK, AutoGen, Langflow, A2A, and vanilla Python. Also includes OpenShift deployment guides for Claude Code, Codex, OpenCode, and OpenClaw.
 
 ## Agents
 
@@ -29,6 +29,8 @@ Agents are organized by framework. Pick one and follow its README:
 | **A2A** | [LangGraph + CrewAI Agent](./agents/a2a/templates/langgraph_crewai_agent/) | Multi-agent system using the Agent-to-Agent (A2A) protocol. A LangGraph orchestrator delegates tasks to a CrewAI worker agent. Uses a dedicated Helm chart. |
 | **Claude Code** | [Claude Code on OpenShift](./agents/claude-code/) | Deploy Claude Code on OpenShift using OGX as an API gateway to vLLM for model serving. Includes deployment manifests and vLLM configuration. |
 | **OpenClaw** | [OpenClaw on OpenShift](./agents/openclaw/deployment/) | Deploy OpenClaw on OpenShift with vLLM model serving, OAuth SSO, and production-grade security. Kustomize-based deployment using pre-built images. |
+| **Codex** | [Codex on OpenShift](./agents/codex/deployment/) | Run OpenAI Codex CLI inside an OpenShell sandbox on OpenShift. Containerfile-based deployment. |
+| **OpenCode** | [OpenCode on OpenShift](./agents/opencode/deployment/) | Run OpenCode inside an OpenShell sandbox on OpenShift. Containerfile-based deployment. |
 
 ## Getting Started
 
@@ -69,6 +71,8 @@ agentic-starter-kits/
 │   ├── langflow/
 │   ├── claude-code/
 │   ├── openclaw/
+│   ├── codex/
+│   ├── opencode/
 │   └── a2a/
 ├── components/                          # Shared reusable packages (auth, etc.)
 ├── evals/
@@ -121,10 +125,10 @@ See `tests/behavioral/` for full details.
 
 ## Additional Resources
 
-- [OGX Documentation](https://ogx-ai.github.io/docs/)
-- [Ollama Documentation](https://docs.ollama.com/)
-- [OpenShift Documentation](https://docs.openshift.com/)
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
+- **OGX Documentation**: <https://ogx-ai.github.io/docs/>
+- **Ollama Documentation**: <https://docs.ollama.com/>
+- **OpenShift Documentation**: <https://docs.openshift.com/>
+- **Kubernetes**: <https://kubernetes.io/docs/>
 
 ## Contributing
 
