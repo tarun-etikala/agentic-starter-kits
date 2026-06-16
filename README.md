@@ -80,6 +80,8 @@ agentic-starter-kits/
 │   └── evalhub_adapter/                 # EvalHub on-cluster adapter (JobSpec → harness)
 ├── tests/
 │   └── behavioral/                      # Behavioral eval suite
+├── sandboxes/
+│   └── base/                            # OpenShell base container image
 ├── infrastructure/
 │   └── llm-d/                           # llm-d deployment manifests and test tooling
 ├── docs/                                # Guides: local dev, deployment, contributing
@@ -116,7 +118,7 @@ See `tests/behavioral/` for full details.
 
 ## Documentation
 
-- [Local Development](./docs/local-development.md) — Ollama + Llama Stack setup
+- [Local Development](./docs/local-development.md) — Ollama + OGX setup
 - [OpenShift Deployment](./docs/openshift-deployment.md) — Helm-based deployment guide
 - [Adding a New Agent](./docs/adding-a-new-agent.md) — How to contribute a new agent template
 - [Adding Behavioral Tests](./docs/adding-behavioral-tests.md) — How to add test coverage for an agent
