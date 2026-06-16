@@ -118,6 +118,9 @@ See `tests/behavioral/` for full details.
 - [Adding Behavioral Tests](./docs/adding-behavioral-tests.md) — How to add test coverage for an agent
 - [Adding an EvalHub Agent Integration](./docs/adding-evalhub-agent-integration.md) — How to integrate a new agent into the EvalHub evaluation pipeline
 - [llm-d Deployment](./docs/llm-d-deployment.md) — Deploy llm-d for intelligent LLM inference routing on OpenShift AI
+
+## Additional Resources
+
 - [OGX Documentation](https://ogx-ai.github.io/docs/)
 - [Ollama Documentation](https://docs.ollama.com/)
 - [OpenShift Documentation](https://docs.openshift.com/)
