@@ -58,7 +58,7 @@ You can use placeholders for container images if you only run Python locally:
 ```ini
 API_KEY=your-key-or-not-needed
 BASE_URL=http://localhost:8321/v1
-MODEL_ID=ollama/llama3.1:8b
+MODEL_ID=ollama/Llama3.1:8B
 CONTAINER_IMAGE=not-needed
 CREW_A2A_PUBLIC_URL=http://127.0.0.1:9100
 LANGGRAPH_A2A_PUBLIC_URL=http://127.0.0.1:9200
@@ -67,7 +67,7 @@ CREW_A2A_PORT=9100
 LANGGRAPH_A2A_PORT=9200
 ```
 
-See [Local Development](../../../docs/local-development.md) for Ollama + Llama Stack setup for local model serving.
+See [Local Development](../../../docs/local-development.md) for Ollama + OGX setup for local model serving.
 
 #### OpenShift cluster (values for `make build` / `make push` / `make deploy`)
 
@@ -75,7 +75,7 @@ Edit `.env` with your keys and registry image(s):
 
 ```ini
 API_KEY=your-api-key-here
-BASE_URL=https://your-llama-stack.example.com/v1
+BASE_URL=https://your-ogx.example.com/v1
 MODEL_ID=your-model-id
 CONTAINER_IMAGE=quay.io/your-org/a2a-langgraph-crewai:latest
 ```

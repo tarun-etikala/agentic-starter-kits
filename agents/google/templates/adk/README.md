@@ -11,7 +11,7 @@
 ## What this agent does
 
 General-purpose agent using Google Agent Development Kit (ADK) 2.0 with a web search tool. It uses the LiteLLM model
-connector to route inference through a LlamaStack server's OpenAI-compatible API endpoint.
+connector to route inference through a OGX server's OpenAI-compatible API endpoint.
 
 ---
 
@@ -57,13 +57,13 @@ The default model is `llama3.1:8b`. To use a different model, pass `MODEL=`:
 make ollama
 ```
 
-### Run llama server
+### Run OGX server
 
 > **Keep this terminal open** – the server needs to keep running.
 > You should see output indicating the server started on `http://localhost:8321`.
 
 ```bash
-make llama-server
+make ogx-server
 ```
 
 ### Run the interactive web application
@@ -108,9 +108,9 @@ CONTAINER_IMAGE = quay.io/your-username/google-adk-agent:latest
 **Notes:**
 
 - `API_KEY` - your API key or contact your cluster administrator
-- `BASE_URL` - should end with `/v1`. For local Llama Stack, use `http://localhost:8321/v1`
+- `BASE_URL` - should end with `/v1`. For local OGX, use `http://localhost:8321/v1`
 - `MODEL_ID` - model identifier available on your endpoint
-  - **Local Llama Stack:** requires `ollama/` prefix (e.g., `ollama/llama3.1:8b`)
+  - **Local OGX:** requires `ollama/` prefix (e.g., `ollama/Llama3.1:8B`)
   - **Cluster deployment:** discover available models via `curl $BASE_URL/models` or check your model serving dashboard
 - `CONTAINER_IMAGE` – full image path where the agent container will be pushed and pulled from. The image is built
   locally, pushed to this registry, and then deployed to OpenShift.
@@ -271,11 +271,11 @@ curl http://localhost:8000/health
 This agent combines three key components:
 
 1. **Google ADK 2.0 LlmAgent**: Manages the agent loop (reason, call tools, observe, answer)
-2. **LiteLLM Model Connector**: Routes LLM calls to any OpenAI-compatible API (LlamaStack)
+2. **LiteLLM Model Connector**: Routes LLM calls to any OpenAI-compatible API (OGX)
 3. **InMemoryRunner**: Handles session management and agent execution
 
 ```text
-User Input -> ADK LlmAgent -> LiteLLM -> LlamaStack (OpenAI API)
+User Input -> ADK LlmAgent -> LiteLLM -> OGX (OpenAI API)
                  |                           |
                  v                           v
             Tool Calls              LLM Inference
@@ -296,7 +296,7 @@ User Input -> ADK LlmAgent -> LiteLLM -> LlamaStack (OpenAI API)
 | Variable          | Description        | Example                                               |
 |-------------------|--------------------|-------------------------------------------------------|
 | `BASE_URL`        | LLM API endpoint   | `http://localhost:8321/v1`                            |
-| `MODEL_ID`        | Model identifier   | `ollama/llama3.1:8b`                                  |
+| `MODEL_ID`        | Model identifier   | `ollama/Llama3.1:8B`                                  |
 | `API_KEY`         | API authentication | `not-needed-for-local-development` (local) or API key |
 | `CONTAINER_IMAGE` | Container registry | `quay.io/user/google-adk-agent:latest`                |
 
@@ -334,7 +334,7 @@ TOOLS = [dummy_web_search, my_custom_tool]
 **Tool calls returned as plain text instead of function calls**
 
 - This can happen with smaller models (e.g., `llama3.2:3b`). Try a larger model or ensure
-  the model supports function calling through LlamaStack.
+  the model supports function calling through OGX.
 
 **LiteLLM debug mode**
 
@@ -349,7 +349,7 @@ TOOLS = [dummy_web_search, my_custom_tool]
 
 - **Google ADK 2.0 Documentation**: <https://google.github.io/adk-docs/2.0/>
 - **LiteLLM Documentation**: <https://docs.litellm.ai/>
-- **Llama Stack Documentation**: <https://llama-stack.readthedocs.io/>
+- **OGX Documentation**: <https://ogx-ai.github.io/docs/>
 - **Ollama Documentation**: <https://ollama.com/docs>
 
 ---
