@@ -8,7 +8,7 @@
 
 ## Purpose
 
-Production-ready starter kits for building and deploying AI agents on Red Hat OpenShift. Each kit is a self-contained agent with docs and deployment configs - most include a Makefile, Dockerfile, and Helm chart so you can build locally and deploy to OpenShift without stitching together boilerplate. Includes agents built with LangGraph, CrewAI, LlamaIndex, Google ADK, AutoGen, Langflow, A2A, and vanilla Python. Also includes OpenShift deployment guides for Claude Code, Codex, OpenCode, and OpenClaw.
+Production-ready starter kits for building and deploying AI agents on Red Hat OpenShift. Each kit is self-contained with docs and deployment configs - most include a Makefile, Dockerfile, and Helm chart. Build locally, then deploy to OpenShift without stitching together boilerplate.
 
 ## Agents
 
@@ -27,7 +27,7 @@ Agents are organized by framework. Pick one and follow its README:
 | **Google ADK** | [ADK Agent](./agents/google/templates/adk/) | General-purpose agent using Google ADK 2.0 with LiteLLM to route inference through a LlamaStack-compatible endpoint. |
 | **Langflow** | [Simple Tool Calling Agent](./agents/langflow/templates/simple_tool_calling_agent/) | Tool-calling agent built with Langflow's visual flow builder. Calls external APIs as tools and reasons over results. Includes Langfuse v3 tracing. Runs locally via `podman-compose`. |
 | **A2A** | [LangGraph + CrewAI Agent](./agents/a2a/templates/langgraph_crewai_agent/) | Multi-agent system using the Agent-to-Agent (A2A) protocol. A LangGraph orchestrator delegates tasks to a CrewAI worker agent. Uses a dedicated Helm chart. |
-| **Claude Code** | [Claude Code on OpenShift](./agents/claude-code/) | Deploy Claude Code on OpenShift using OGX as an API gateway to vLLM for model serving. Includes deployment manifests and vLLM configuration. |
+| **Claude Code** | [Claude Code on OpenShift](./agents/claude-code/) | Deploy Claude Code on OpenShift with multiple backend options (Anthropic API, Vertex AI, vLLM, OGX). Includes deployment manifests and configuration guides. |
 | **OpenClaw** | [OpenClaw on OpenShift](./agents/openclaw/deployment/) | Deploy OpenClaw on OpenShift with vLLM model serving, OAuth SSO, and production-grade security. Kustomize-based deployment using pre-built images. |
 | **Codex** | [Codex on OpenShift](./agents/codex/deployment/) | Run OpenAI Codex CLI inside an OpenShell sandbox on OpenShift. Containerfile-based deployment. |
 | **OpenCode** | [OpenCode on OpenShift](./agents/opencode/deployment/) | Run OpenCode inside an OpenShell sandbox on OpenShift. Containerfile-based deployment. |
