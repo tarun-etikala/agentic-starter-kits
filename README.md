@@ -8,8 +8,7 @@
 
 ## Purpose
 
-Production-ready agent templates to build and deploy LLM-powered agents. Run locally (e.g. with Ollama/Llama Stack) or
-deploy to Red Hat OpenShift. Each agent has step-by-step docs.
+Production-ready starter kits for building and deploying AI agents on Red Hat OpenShift. Each kit is self-contained with docs and deployment configs - most include a Makefile, Dockerfile, and Helm chart. Build locally, then deploy to OpenShift without stitching together boilerplate.
 
 ## Agents
 
@@ -28,113 +27,67 @@ Agents are organized by framework. Pick one and follow its README:
 | **Google ADK** | [ADK Agent](./agents/google/templates/adk/) | General-purpose agent using Google ADK 2.0 with LiteLLM to route inference through a LlamaStack-compatible endpoint. |
 | **Langflow** | [Simple Tool Calling Agent](./agents/langflow/templates/simple_tool_calling_agent/) | Tool-calling agent built with Langflow's visual flow builder. Calls external APIs as tools and reasons over results. Includes Langfuse v3 tracing. Runs locally via `podman-compose`. |
 | **A2A** | [LangGraph + CrewAI Agent](./agents/a2a/templates/langgraph_crewai_agent/) | Multi-agent system using the Agent-to-Agent (A2A) protocol. A LangGraph orchestrator delegates tasks to a CrewAI worker agent. Uses a dedicated Helm chart. |
+| **Claude Code** | [Claude Code on OpenShift](./agents/claude-code/) | Deploy Claude Code on OpenShift with multiple backend options (Anthropic API, Vertex AI, vLLM, OGX). Includes deployment manifests and configuration guides. |
+| **OpenClaw** | [OpenClaw on OpenShift](./agents/openclaw/deployment/) | Deploy OpenClaw on OpenShift with vLLM model serving, OAuth SSO, and production-grade security. Kustomize-based deployment using pre-built images. |
+| **Codex** | [Codex on OpenShift](./agents/codex/deployment/) | Run OpenAI Codex CLI inside an OpenShell sandbox on OpenShift. Containerfile-based deployment. |
+| **OpenCode** | [OpenCode on OpenShift](./agents/opencode/deployment/) | Run OpenCode inside an OpenShell sandbox on OpenShift. Containerfile-based deployment. |
 
-## Deployment Options
+## Getting Started
 
-Agents in this repository can support two deployment modes:
+```bash
+git clone https://github.com/red-hat-data-services/agentic-starter-kits
+cd agentic-starter-kits
+```
 
-### 🖥️ Local Development
+Install [uv](https://docs.astral.sh/uv/) (Python package manager):
 
-- Run agents on your local machine
-- Use Llama Stack server with Ollama for model serving
-- Ideal for development, testing, and experimentation
-- No cloud infrastructure required
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
-### ☁️ Production Deployment
+Pick an agent from the table above, `cd` into its directory, and follow its README for setup, local development, and deployment to OpenShift.
 
-- Deploy agents to Red Hat OpenShift Cluster
-- Containerized deployment with Kubernetes
-- Production-grade scaling and monitoring
-- CI/CD ready
+- **Local development** — run agents on your machine with Ollama or OGX for model serving. See the [Local Development](./docs/local-development.md) guide.
+- **Production deployment** — containerized deployment on Red Hat OpenShift with Helm charts, monitoring, and production-grade scaling. See the [OpenShift Deployment](./docs/openshift-deployment.md) guide.
 
 ## Repository Structure
 
 ```text
 agentic-starter-kits/
 ├── agents/
-│   ├── langgraph/
-│   │   ├── templates/
-│   │   │   ├── react_agent/              # LangGraph ReAct agent
-│   │   │   ├── agentic_rag/             # LangGraph RAG agent with Milvus
-│   │   │   ├── react_with_database_memory/ # LangGraph ReAct + PostgreSQL memory
-│   │   │   └── human_in_the_loop/       # LangGraph Human-in-the-Loop agent
-│   │   ├── deployment/                  # Helm chart for LangGraph agents
-│   │   └── examples/                    # Business use-case demos
+│   ├── langgraph/                       # Each framework follows this layout
+│   │   ├── templates/                   # Agent templates
+│   │   │   ├── react_agent/
+│   │   │   ├── agentic_rag/
+│   │   │   ├── react_with_database_memory/
+│   │   │   └── human_in_the_loop/
+│   │   ├── examples/                    # Business use-case demos
+│   │   └── deployment/                  # Helm chart for this framework
 │   ├── crewai/
-│   │   ├── templates/
-│   │   │   └── websearch_agent/         # CrewAI web search agent
-│   │   └── examples/
 │   ├── llamaindex/
-│   │   ├── templates/
-│   │   │   └── websearch_agent/         # LlamaIndex web search agent
-│   │   └── examples/
 │   ├── vanilla_python/
-│   │   ├── templates/
-│   │   │   └── openai_responses_agent/  # OpenAI Responses API (no framework)
-│   │   └── examples/
 │   ├── autogen/
-│   │   ├── templates/
-│   │   │   └── mcp_agent/               # AutoGen + MCP (SSE)
-│   │   └── examples/
 │   ├── google/
-│   │   ├── templates/
-│   │   │   └── adk/                     # Google ADK 2.0 agent
-│   │   └── examples/
 │   ├── langflow/
-│   │   ├── templates/
-│   │   │   └── simple_tool_calling_agent/ # Langflow tool-calling agent
-│   │   └── examples/
+│   ├── claude-code/
+│   ├── openclaw/
+│   ├── codex/
+│   ├── opencode/
 │   └── a2a/
-│       ├── templates/
-│       │   └── langgraph_crewai_agent/  # A2A multi-agent (LangGraph + CrewAI)
-│       └── examples/
+├── components/                          # Shared reusable packages (auth, etc.)
 ├── evals/
-│   ├── harness/                     # Shared eval engine (runner, scorers, MLflow client)
-│   └── evalhub_adapter/             # EvalHub on-cluster adapter (JobSpec → harness)
+│   ├── harness/                         # Shared eval engine (runner, scorers, MLflow client)
+│   └── evalhub_adapter/                 # EvalHub on-cluster adapter (JobSpec → harness)
 ├── tests/
-│   └── behavioral/                  # Behavioral eval suite (shared infra)
+│   └── behavioral/                      # Behavioral eval suite
+├── sandboxes/
+│   └── base/                            # OpenShell base container image
 ├── infrastructure/
-│   └── llm-d/                       # llm-d deployment manifests and test tooling
-├── docs/                            # Guides: local dev, deployment, contributing
-├── pyproject.toml                   # Test deps & pytest config
+│   └── llm-d/                           # llm-d deployment manifests and test tooling
+├── docs/                                # Guides: local dev, deployment, contributing
+├── pyproject.toml                       # Test deps & pytest config
 └── README.md
 ```
-
----
-
-## How to Use This Repository
-
-1. **Start Here**: Read this README to understand the overall structure and install core dependencies
-2. **Choose an Agent**: Select an agent from the `agents/` directory based on your use case
-3. **Follow Agent README**: Navigate to the agent's directory and follow its specific README for:
-    - Agent-specific dependencies installation
-    - Configuration and setup
-    - Local development or OpenShift deployment
-    - Usage examples and API endpoints
-
-### Pre-requisitions to run that repo
-
-Run this script to set up repo stuff with a use of [UV](https://docs.astral.sh/uv/) and python 3.12
-
-Download repo
-
-```bash
-git clone https://github.com/red-hat-data-services/agentic-starter-kits
-```
-
-Get into root dir
-
-```bash
-cd agentic-starter-kits
-```
-
-Install UV
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
----
 
 ## Behavioral Tests
 
@@ -164,11 +117,9 @@ AGENT_URL=https://my-agent.example.com pytest tests/behavioral/ -v
 
 See `tests/behavioral/` for full details.
 
----
-
 ## Documentation
 
-- [Local Development](./docs/local-development.md) — Ollama + Llama Stack setup
+- [Local Development](./docs/local-development.md) — Ollama + OGX setup
 - [OpenShift Deployment](./docs/openshift-deployment.md) — Helm-based deployment guide
 - [Adding a New Agent](./docs/adding-a-new-agent.md) — How to contribute a new agent template
 - [Adding Behavioral Tests](./docs/adding-behavioral-tests.md) — How to add test coverage for an agent
@@ -181,17 +132,15 @@ This project has [Claude Code](https://docs.anthropic.com/en/docs/claude-code) s
 
 ## Additional Resources
 
-- **Llama Stack Documentation**: <https://llama-stack.readthedocs.io/>
+- **OGX Documentation**: <https://ogx-ai.github.io/docs/>
 - **Ollama Documentation**: <https://docs.ollama.com/>
 - **OpenShift Documentation**: <https://docs.openshift.com/>
 - **Kubernetes**: <https://kubernetes.io/docs/>
 
 ## Contributing
 
-Contributions are welcome! Please see individual agent READMEs for specific guidelines.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-MIT License
-
-Copyright (c) 2026
+[Apache License 2.0](LICENSE)
