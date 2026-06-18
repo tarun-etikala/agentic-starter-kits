@@ -354,7 +354,13 @@ run_tests() {
       export MLFLOW_WORKSPACE="${MLFLOW_WORKSPACE:-}"
       export MLFLOW_TRACKING_INSECURE_TLS="true"
 
-      uv run --extra test python -m pytest "${test_path}" -v --tb=short
+      local reporter_flags=()
+      if uv run --extra test python -c "import harness.reporters" 2>/dev/null; then
+        reporter_flags+=(--report-json "${RESULTS_DIR}/${log_name}_scores.json" --report-console)
+      fi
+
+      uv run --extra test python -m pytest "${test_path}" -v --tb=short \
+        "${reporter_flags[@]}"
     ) > "${logfile}" 2>&1 &
     local pid=$!
     CHILD_PIDS+=("$pid")
@@ -685,6 +691,9 @@ print_summary() {
   else
     echo -e "${RED}${BOLD}SOME AGENTS FAILED${RESET}"
   fi
+
+  # Clean up temporary .exit files
+  rm -f "${RESULTS_DIR}"/*.exit
 
   echo ""
   log "Full logs: ${RESULTS_DIR}"
