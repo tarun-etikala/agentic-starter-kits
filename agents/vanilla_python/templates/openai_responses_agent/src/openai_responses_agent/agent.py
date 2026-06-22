@@ -41,8 +41,8 @@ def get_agent_closure(
 
     def get_agent() -> "_AIAgentAdapter":
         return _AIAgentAdapter(
-            base_url=base_url,
-            model_id=model_id,
+            base_url=base_url,  # type: ignore[arg-type]
+            model_id=model_id,  # type: ignore[arg-type]
             api_key=api_key,
             tools=[("search_price", search_price), ("search_reviews", search_reviews)],
         )
@@ -57,8 +57,8 @@ class _AIAgentAdapter:
 
     def __init__(
         self,
-        base_url: Optional[str] = None,
-        model_id: Optional[str] = None,
+        base_url: str,
+        model_id: str,
         api_key: Optional[str] = None,
         tools: Optional[List[tuple]] = None,
     ):
