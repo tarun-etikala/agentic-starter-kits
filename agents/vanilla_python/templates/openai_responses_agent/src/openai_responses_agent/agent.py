@@ -57,8 +57,8 @@ class _AIAgentAdapter:
 
     def __init__(
         self,
-        base_url: str,
-        model_id: str,
+        base_url: Optional[str] = None,
+        model_id: Optional[str] = None,
         api_key: Optional[str] = None,
         tools: Optional[List[tuple]] = None,
     ):

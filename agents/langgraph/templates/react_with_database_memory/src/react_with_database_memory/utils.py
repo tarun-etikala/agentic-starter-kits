@@ -13,11 +13,11 @@ def get_database_uri() -> str:
     - POSTGRES_USER
     - POSTGRES_PASSWORD
     """
-    host = getenv("POSTGRES_HOST")
-    user = getenv("POSTGRES_USER")
-    password = getenv("POSTGRES_PASSWORD")
-    database = getenv("POSTGRES_DB")
-    port = getenv("POSTGRES_PORT")
+    host = getenv("POSTGRES_HOST", "")
+    user = getenv("POSTGRES_USER", "")
+    password = getenv("POSTGRES_PASSWORD", "")
+    database = getenv("POSTGRES_DB", "")
+    port = getenv("POSTGRES_PORT", "")
 
     safe_host = quote_plus(host)
     safe_user = quote_plus(user)
