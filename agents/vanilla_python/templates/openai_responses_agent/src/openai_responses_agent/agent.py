@@ -39,10 +39,19 @@ def get_agent_closure(
     if not api_key:
         api_key = getenv("API_KEY")
 
+    if not base_url:
+        raise ValueError(
+            "BASE_URL is required. Set it via argument or BASE_URL env var."
+        )
+    if not model_id:
+        raise ValueError(
+            "MODEL_ID is required. Set it via argument or MODEL_ID env var."
+        )
+
     def get_agent() -> "_AIAgentAdapter":
         return _AIAgentAdapter(
-            base_url=base_url,  # type: ignore[arg-type]
-            model_id=model_id,  # type: ignore[arg-type]
+            base_url=base_url,
+            model_id=model_id,
             api_key=api_key,
             tools=[("search_price", search_price), ("search_reviews", search_reviews)],
         )
