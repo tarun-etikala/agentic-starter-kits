@@ -2,9 +2,11 @@ import json
 import logging
 import time
 import uuid
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from os import getenv
 from pathlib import Path
+from typing import Any
 
 from adk_agent.agent import APP_NAME, get_runner
 from adk_agent.tracing import enable_tracing
@@ -123,7 +125,7 @@ USER_ID = "api_user"
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Initialize the ADK agent runner on startup and clear it on shutdown."""
     global runner
 
@@ -188,7 +190,9 @@ def _extract_text_from_events(events: list) -> str:
     description="Creates a model response for the given chat conversation. When `stream=false`, returns a complete `chat.completion` JSON object. When `stream=true`, returns Server-Sent Events with `chat.completion.chunk` deltas.",
     tags=["Chat"],
 )
-async def chat_completions(request: ChatCompletionRequest):
+async def chat_completions(
+    request: ChatCompletionRequest,
+) -> dict[str, Any] | StreamingResponse:
     global runner
 
     if runner is None:
@@ -203,7 +207,7 @@ async def chat_completions(request: ChatCompletionRequest):
         return await _handle_chat(user_content, model_id)
 
 
-async def _handle_chat(user_content: str, model_id: str):
+async def _handle_chat(user_content: str, model_id: str) -> dict[str, Any]:
     """Handle non-streaming chat completion."""
     global runner
 
@@ -295,14 +299,14 @@ async def _handle_chat(user_content: str, model_id: str):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-async def _handle_stream(user_content: str, model_id: str):
+async def _handle_stream(user_content: str, model_id: str) -> StreamingResponse:
     """Handle streaming chat completion with OpenAI-compatible SSE chunks."""
     global runner
 
     completion_id = _make_completion_id()
     created = int(time.time())
 
-    async def event_generator():
+    async def event_generator() -> AsyncIterator[str]:
         try:
             session = await runner.session_service.create_session(
                 app_name=APP_NAME, user_id=USER_ID
@@ -430,7 +434,7 @@ async def _handle_stream(user_content: str, model_id: str):
 @app.get(
     "/health", response_model=HealthResponse, summary="Health check", tags=["Health"]
 )
-async def health():
+async def health() -> dict[str, Any] | JSONResponse:
     initialized = runner is not None
     body = {
         "status": "healthy" if initialized else "not_ready",
@@ -451,7 +455,7 @@ if not _IMAGES_DIR.is_dir():
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def playground():
+async def playground() -> FileResponse:
     """Serve the playground chat UI."""
     return FileResponse(
         _PLAYGROUND_HTML,
@@ -460,7 +464,7 @@ async def playground():
 
 
 @app.get("/images/{filename:path}", include_in_schema=False)
-async def serve_image(filename: str):
+async def serve_image(filename: str) -> FileResponse:
     """Serve images from the project-level images directory."""
     if Path(filename).is_absolute():
         raise HTTPException(status_code=404, detail="Image not found")

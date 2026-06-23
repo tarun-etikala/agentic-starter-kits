@@ -2,9 +2,11 @@ import json
 import logging
 import time
 import uuid
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from os import getenv
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import (
@@ -132,7 +134,7 @@ checkpointer = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Initialize the HITL agent graph on startup and clear it on shutdown."""
     global agent_graph_closure, checkpointer
 
@@ -224,7 +226,9 @@ def _format_context_messages(messages) -> list[dict]:
     ),
     tags=["Chat"],
 )
-async def chat_completions(request: ChatCompletionRequest):
+async def chat_completions(
+    request: ChatCompletionRequest,
+) -> dict[str, Any] | StreamingResponse:
     global agent_graph_closure, checkpointer
 
     if agent_graph_closure is None:
@@ -245,7 +249,7 @@ async def _handle_chat(
     model_id: str,
     thread_id: str,
     config: dict,
-):
+) -> dict[str, Any]:
     """Handle non-streaming chat completion with HITL support."""
     global agent_graph_closure, checkpointer
 
@@ -340,7 +344,7 @@ async def _handle_stream(
     model_id: str,
     thread_id: str,
     config: dict,
-):
+) -> StreamingResponse:
     """Handle streaming chat completion with HITL support.
 
     Uses astream with stream_mode="updates" to detect __interrupt__ keys
@@ -358,7 +362,7 @@ async def _handle_stream(
     completion_id = _make_completion_id()
     created = int(time.time())
 
-    async def event_generator():
+    async def event_generator() -> AsyncIterator[str]:
         try:
             agent = agent_graph_closure(checkpointer)
 
@@ -539,7 +543,7 @@ async def _handle_stream(
 @app.get(
     "/health", response_model=HealthResponse, summary="Health check", tags=["Health"]
 )
-async def health():
+async def health() -> dict[str, Any] | JSONResponse:
     initialized = agent_graph_closure is not None
     body = {
         "status": "healthy" if initialized else "not_ready",
@@ -560,13 +564,13 @@ if not _IMAGES_DIR.is_dir():
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def playground():
+async def playground() -> FileResponse:
     """Serve the playground chat UI."""
     return FileResponse(_PLAYGROUND_HTML)
 
 
 @app.get("/images/{filename:path}", include_in_schema=False)
-async def serve_image(filename: str):
+async def serve_image(filename: str) -> FileResponse:
     """Serve images from the project-level images directory."""
     base = _IMAGES_DIR.resolve()
     file_path = (base / filename).resolve()

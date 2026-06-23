@@ -1,5 +1,5 @@
 from os import getenv
-from typing import Annotated, Callable, Sequence
+from typing import Annotated, Any, Callable, Sequence
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
@@ -95,7 +95,7 @@ def get_graph_closure(
 
         return agent
 
-    def generate(state: AgentState):
+    def generate(state: AgentState) -> dict:
         """
         Generate final answer based on retrieved context.
 
@@ -176,7 +176,7 @@ Answer[start response with 'based on provided documents]:"""
                 ]
             }
 
-    def get_graph(instruction_prompt: SystemMessage | None = None):
+    def get_graph(instruction_prompt: SystemMessage | None = None) -> Any:
         """Create and compile the RAG workflow graph.
 
         Args:

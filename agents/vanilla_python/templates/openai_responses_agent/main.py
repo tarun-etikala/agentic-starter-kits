@@ -253,10 +253,10 @@ async def _handle_stream(user_message: str, model_id: str) -> StreamingResponse:
         try:
             queue: asyncio.Queue = asyncio.Queue()
 
-            def on_event(event_type: str, data: dict):
+            def on_event(event_type: str, data: dict) -> None:
                 queue.put_nowait((event_type, data))
 
-            def run_agent():
+            def run_agent() -> None:
                 adapter = get_agent()
                 agent = AIAgent(
                     model=adapter._model_id,

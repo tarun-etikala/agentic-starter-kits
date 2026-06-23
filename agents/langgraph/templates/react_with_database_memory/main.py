@@ -2,9 +2,11 @@ import json
 import logging
 import time
 import uuid
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from os import getenv
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import (
@@ -132,7 +134,7 @@ DB_URI = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Initialize the ReAct agent graph on startup and clear it on shutdown."""
     global agent_graph_closure, DB_URI
 
@@ -169,7 +171,9 @@ app = FastAPI(
 )
 
 
-def _convert_dict_to_message(msg: ChatMessage):
+def _convert_dict_to_message(
+    msg: ChatMessage,
+) -> SystemMessage | AIMessage | HumanMessage:
     """Convert ChatMessage to LangChain message object."""
     if msg.role == "system":
         return SystemMessage(content=msg.content)
@@ -223,7 +227,9 @@ def _format_context_messages(messages) -> list[dict]:
     description="Creates a model response for the given chat conversation. When `stream=false`, returns a complete `chat.completion` JSON object. When `stream=true`, returns Server-Sent Events with `chat.completion.chunk` deltas. Supports `thread_id` for conversation persistence.",
     tags=["Chat"],
 )
-async def chat_completions(request: ChatCompletionRequest):
+async def chat_completions(
+    request: ChatCompletionRequest,
+) -> dict[str, Any] | StreamingResponse:
     global agent_graph_closure, DB_URI
 
     if agent_graph_closure is None:
@@ -255,7 +261,7 @@ async def _handle_chat(
     model_id: str,
     thread_id: str | None,
     system_prompt: str | None,
-):
+) -> dict[str, Any]:
     """Handle non-streaming chat completion."""
     global agent_graph_closure, DB_URI
 
@@ -324,14 +330,14 @@ async def _handle_stream(
     model_id: str,
     thread_id: str | None,
     system_prompt: str | None,
-):
+) -> StreamingResponse:
     """Handle streaming chat completion with OpenAI-compatible SSE chunks."""
     global agent_graph_closure, DB_URI
 
     completion_id = _make_completion_id()
     created = int(time.time())
 
-    async def event_generator():
+    async def event_generator() -> AsyncIterator[str]:
         try:
             async with AsyncPostgresSaver.from_conn_string(DB_URI) as saver:
                 await saver.setup()
@@ -464,7 +470,7 @@ async def _handle_stream(
 @app.get(
     "/health", response_model=HealthResponse, summary="Health check", tags=["Health"]
 )
-async def health():
+async def health() -> dict[str, Any] | JSONResponse:
     initialized = agent_graph_closure is not None
     body = {
         "status": "healthy" if initialized else "not_ready",
@@ -486,13 +492,13 @@ if not _IMAGES_DIR.is_dir():
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def playground():
+async def playground() -> FileResponse:
     """Serve the playground chat UI."""
     return FileResponse(_PLAYGROUND_HTML)
 
 
 @app.get("/images/{filename:path}", include_in_schema=False)
-async def serve_image(filename: str):
+async def serve_image(filename: str) -> FileResponse:
     """Serve images from the project-level images directory."""
     base = _IMAGES_DIR.resolve()
     file_path = (base / filename).resolve()
