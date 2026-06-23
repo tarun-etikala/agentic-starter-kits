@@ -3,9 +3,11 @@ import json
 import logging
 import time
 import uuid
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from os import getenv
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import (
@@ -119,7 +121,7 @@ get_agent = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Initialize the agent closure on startup and clear it on shutdown.
 
     Reads BASE_URL and MODEL_ID from the environment and sets the global get_agent
@@ -172,7 +174,9 @@ def _make_completion_id() -> str:
     description="Creates a model response for the given chat conversation. When `stream=false`, returns a complete `chat.completion` JSON object. When `stream=true`, returns Server-Sent Events with `chat.completion.chunk` deltas.",
     tags=["Chat"],
 )
-async def chat_completions(request: ChatCompletionRequest):
+async def chat_completions(
+    request: ChatCompletionRequest,
+) -> dict[str, Any] | StreamingResponse:
     global get_agent
 
     if get_agent is None:
@@ -187,7 +191,7 @@ async def chat_completions(request: ChatCompletionRequest):
         return await _handle_chat(user_message, model_id)
 
 
-async def _handle_chat(user_message: str, model_id: str):
+async def _handle_chat(user_message: str, model_id: str) -> dict[str, Any]:
     """Handle non-streaming chat completion."""
     global get_agent
 
@@ -238,14 +242,14 @@ async def _handle_chat(user_message: str, model_id: str):
         )
 
 
-async def _handle_stream(user_message: str, model_id: str):
+async def _handle_stream(user_message: str, model_id: str) -> StreamingResponse:
     """Handle streaming chat completion with OpenAI-compatible SSE chunks."""
     global get_agent
 
     completion_id = _make_completion_id()
     created = int(time.time())
 
-    async def event_generator():
+    async def event_generator() -> AsyncIterator[str]:
         try:
             queue: asyncio.Queue = asyncio.Queue()
 
@@ -397,7 +401,7 @@ def _map_event_to_chunk(
 @app.get(
     "/health", response_model=HealthResponse, summary="Health check", tags=["Health"]
 )
-async def health():
+async def health() -> dict[str, Any] | JSONResponse:
     initialized = get_agent is not None
     body = {
         "status": "healthy" if initialized else "not_ready",
@@ -410,12 +414,14 @@ async def health():
 
 # ── Playground API aliases (so the same index.html works in both modes) ───────
 @app.get("/api/health", response_model=HealthResponse, include_in_schema=False)
-async def api_health():
+async def api_health() -> dict[str, Any] | JSONResponse:
     return await health()
 
 
 @app.post("/api/chat", include_in_schema=False)
-async def api_chat(request: ChatCompletionRequest):
+async def api_chat(
+    request: ChatCompletionRequest,
+) -> dict[str, Any] | StreamingResponse:
     return await chat_completions(request)
 
 
@@ -429,13 +435,13 @@ if not _IMAGES_DIR.is_dir():
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def playground():
+async def playground() -> FileResponse:
     """Serve the playground chat UI."""
     return FileResponse(_PLAYGROUND_HTML)
 
 
 @app.get("/images/{filename:path}", include_in_schema=False)
-async def serve_image(filename: str):
+async def serve_image(filename: str) -> FileResponse:
     """Serve images from the project-level images directory."""
     base = _IMAGES_DIR.resolve()
     file_path = (base / filename).resolve()
