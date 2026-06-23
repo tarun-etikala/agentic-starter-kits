@@ -185,14 +185,14 @@ def _extract_text_from_events(events: list) -> str:
 
 @app.post(
     "/chat/completions",
-    response_model=ChatCompletionResponse,
+    response_model=None,
     summary="Create chat completion",
     description="Creates a model response for the given chat conversation. When `stream=false`, returns a complete `chat.completion` JSON object. When `stream=true`, returns Server-Sent Events with `chat.completion.chunk` deltas.",
     tags=["Chat"],
 )
 async def chat_completions(
     request: ChatCompletionRequest,
-) -> dict[str, Any] | StreamingResponse:
+):
     global runner
 
     if runner is None:
@@ -431,10 +431,8 @@ async def _handle_stream(user_content: str, model_id: str) -> StreamingResponse:
     )
 
 
-@app.get(
-    "/health", response_model=HealthResponse, summary="Health check", tags=["Health"]
-)
-async def health() -> dict[str, Any] | JSONResponse:
+@app.get("/health", response_model=None, summary="Health check", tags=["Health"])
+async def health():
     initialized = runner is not None
     body = {
         "status": "healthy" if initialized else "not_ready",
@@ -455,7 +453,7 @@ if not _IMAGES_DIR.is_dir():
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def playground() -> FileResponse:
+async def playground():
     """Serve the playground chat UI."""
     return FileResponse(
         _PLAYGROUND_HTML,
@@ -464,7 +462,7 @@ async def playground() -> FileResponse:
 
 
 @app.get("/images/{filename:path}", include_in_schema=False)
-async def serve_image(filename: str) -> FileResponse:
+async def serve_image(filename: str):
     """Serve images from the project-level images directory."""
     if Path(filename).is_absolute():
         raise HTTPException(status_code=404, detail="Image not found")

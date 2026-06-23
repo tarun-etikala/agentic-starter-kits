@@ -169,14 +169,14 @@ def _make_completion_id() -> str:
 
 @app.post(
     "/chat/completions",
-    response_model=ChatCompletionResponse,
+    response_model=None,
     summary="Create chat completion",
     description="Creates a model response for the given chat conversation. When `stream=false`, returns a complete `chat.completion` JSON object. When `stream=true`, returns Server-Sent Events with `chat.completion.chunk` deltas.",
     tags=["Chat"],
 )
 async def chat_completions(
     request: ChatCompletionRequest,
-) -> dict[str, Any] | StreamingResponse:
+):
     global get_agent
 
     if get_agent is None:
@@ -398,10 +398,8 @@ def _map_event_to_chunk(
     return None
 
 
-@app.get(
-    "/health", response_model=HealthResponse, summary="Health check", tags=["Health"]
-)
-async def health() -> dict[str, Any] | JSONResponse:
+@app.get("/health", response_model=None, summary="Health check", tags=["Health"])
+async def health():
     initialized = get_agent is not None
     body = {
         "status": "healthy" if initialized else "not_ready",
@@ -413,15 +411,15 @@ async def health() -> dict[str, Any] | JSONResponse:
 
 
 # ── Playground API aliases (so the same index.html works in both modes) ───────
-@app.get("/api/health", response_model=HealthResponse, include_in_schema=False)
-async def api_health() -> dict[str, Any] | JSONResponse:
+@app.get("/api/health", response_model=None, include_in_schema=False)
+async def api_health():
     return await health()
 
 
-@app.post("/api/chat", include_in_schema=False)
+@app.post("/api/chat", include_in_schema=False, response_model=None)
 async def api_chat(
     request: ChatCompletionRequest,
-) -> dict[str, Any] | StreamingResponse:
+):
     return await chat_completions(request)
 
 
@@ -435,13 +433,13 @@ if not _IMAGES_DIR.is_dir():
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def playground() -> FileResponse:
+async def playground():
     """Serve the playground chat UI."""
     return FileResponse(_PLAYGROUND_HTML)
 
 
 @app.get("/images/{filename:path}", include_in_schema=False)
-async def serve_image(filename: str) -> FileResponse:
+async def serve_image(filename: str):
     """Serve images from the project-level images directory."""
     base = _IMAGES_DIR.resolve()
     file_path = (base / filename).resolve()

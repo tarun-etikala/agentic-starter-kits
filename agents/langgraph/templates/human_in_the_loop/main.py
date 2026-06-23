@@ -215,7 +215,7 @@ def _format_context_messages(messages) -> list[dict]:
 
 @app.post(
     "/chat/completions",
-    response_model=ChatCompletionResponse,
+    response_model=None,
     summary="Create chat completion",
     description=(
         "Creates a model response for the given chat conversation. "
@@ -228,7 +228,7 @@ def _format_context_messages(messages) -> list[dict]:
 )
 async def chat_completions(
     request: ChatCompletionRequest,
-) -> dict[str, Any] | StreamingResponse:
+):
     global agent_graph_closure, checkpointer
 
     if agent_graph_closure is None:
@@ -540,10 +540,8 @@ async def _handle_stream(
     )
 
 
-@app.get(
-    "/health", response_model=HealthResponse, summary="Health check", tags=["Health"]
-)
-async def health() -> dict[str, Any] | JSONResponse:
+@app.get("/health", response_model=None, summary="Health check", tags=["Health"])
+async def health():
     initialized = agent_graph_closure is not None
     body = {
         "status": "healthy" if initialized else "not_ready",
@@ -564,13 +562,13 @@ if not _IMAGES_DIR.is_dir():
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def playground() -> FileResponse:
+async def playground():
     """Serve the playground chat UI."""
     return FileResponse(_PLAYGROUND_HTML)
 
 
 @app.get("/images/{filename:path}", include_in_schema=False)
-async def serve_image(filename: str) -> FileResponse:
+async def serve_image(filename: str):
     """Serve images from the project-level images directory."""
     base = _IMAGES_DIR.resolve()
     file_path = (base / filename).resolve()

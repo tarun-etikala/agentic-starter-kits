@@ -308,7 +308,7 @@ def _tool_invocations_from_task_messages(messages: Any) -> list[dict[str, Any]]:
 
 @app.post(
     "/chat/completions",
-    response_model=ChatResponse,
+    response_model=None,
     summary="Create chat completion",
     description=(
         "Creates a model response for the given chat conversation. "
@@ -319,7 +319,7 @@ def _tool_invocations_from_task_messages(messages: Any) -> list[dict[str, Any]]:
     ),
     tags=["Chat"],
 )
-async def chat(request: ChatRequest) -> dict[str, Any] | StreamingResponse:
+async def chat(request: ChatRequest):
     agent = getattr(app.state, "mcp_agent", None)
     if agent is None:
         err = (
@@ -421,7 +421,7 @@ async def chat(request: ChatRequest) -> dict[str, Any] | StreamingResponse:
 
 @app.get(
     "/health",
-    response_model=HealthResponse,
+    response_model=None,
     summary="Health check",
     description=(
         "Returns 200 when the MCP-backed agent is ready; 503 with `not_ready` until initialization completes "
@@ -429,7 +429,7 @@ async def chat(request: ChatRequest) -> dict[str, Any] | StreamingResponse:
     ),
     tags=["Health"],
 )
-async def health() -> dict[str, Any] | JSONResponse:
+async def health():
     agent_initialized = getattr(app.state, "mcp_agent", None) is not None
     body = {
         "status": "healthy" if agent_initialized else "not_ready",
@@ -449,13 +449,13 @@ if not _IMAGES_DIR.is_dir():
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def playground() -> FileResponse:
+async def playground():
     """Serve the playground chat UI."""
     return FileResponse(_PLAYGROUND_HTML)
 
 
 @app.get("/images/{filename:path}", include_in_schema=False)
-async def serve_image(filename: str) -> FileResponse:
+async def serve_image(filename: str):
     """Serve images from the project-level images directory."""
     base = _IMAGES_DIR.resolve()
     file_path = (base / filename).resolve()
