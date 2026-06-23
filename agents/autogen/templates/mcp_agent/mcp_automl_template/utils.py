@@ -1,6 +1,6 @@
 import json
 from os import getenv
-from typing import Literal
+from typing import Any, Literal
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -15,7 +15,7 @@ def dataframe_to_json_schema(
     exclude_columns: list[str] | None = None,
     max_enum_size: int = 50,
     required_columns: list[str] | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """
     Retrieve a JSON Schema (dict) from a pandas DataFrame.
 
@@ -132,7 +132,7 @@ def json_schema_to_pydantic_model(
     return create_model(class_name, **field_definitions)
 
 
-def get_chat_from_env():
+def get_chat_from_env() -> Any:
     """
     ChatOpenAI from BASE_URL, MODEL_ID, and optional API_KEY (OpenAI-compatible API:
     Llama Stack, Ollama, OpenAI, …). Configure everything in `.env` — no separate code path
@@ -162,7 +162,7 @@ def get_chat_from_env():
     )
 
 
-def get_chat_llama_stack():
+def get_chat_llama_stack() -> Any:
     from langchain_llama_stack import ChatLlamaStack
 
     llama_base_url = getenv("LLAMA_STACK_CLIENT_BASE_URL")
