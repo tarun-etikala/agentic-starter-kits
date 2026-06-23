@@ -69,7 +69,7 @@ class _AIAgentAdapter:
         model_id: str,
         api_key: str | None = None,
         tools: list[tuple] | None = None,
-    ):
+    ) -> None:
         self._base_url = base_url
         self._model_id = model_id
         self._api_key = api_key
@@ -155,7 +155,7 @@ class AIAgent:
         temperature: float = 0,
         base_url: str | None = None,
         api_key: str | None = None,
-    ):
+    ) -> None:
         """
         Initialize the agent with tools and OpenAI client configuration.
 

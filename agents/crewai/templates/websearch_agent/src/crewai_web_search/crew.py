@@ -14,7 +14,7 @@ class AssistanceAgents:
     agents_config = "config/agents.yaml"
     tasks_config = "config/tasks.yaml"
 
-    def __init__(self, llm: LLM, **kwargs):
+    def __init__(self, llm: LLM, **kwargs) -> None:
         self.llm = llm
         self.step_callback = kwargs.pop("step_callback", None)
         self.enable_stream = kwargs.pop("stream", False)
