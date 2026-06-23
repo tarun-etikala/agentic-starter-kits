@@ -1,3 +1,5 @@
+from typing import Any
+
 from crewai import LLM, Agent, Crew, Process, Task
 from crewai.project import CrewBase, after_kickoff, agent, crew, task
 
@@ -18,7 +20,7 @@ class AssistanceAgents:
         self.enable_stream = kwargs.pop("stream", False)
 
     @after_kickoff  # Optional hook to be executed after the crew has finished
-    def log_results(self, output):
+    def log_results(self, output: Any) -> Any:
         # Example of logging results, dynamically changing the output
         print(f"Results: {output}")
         return output
