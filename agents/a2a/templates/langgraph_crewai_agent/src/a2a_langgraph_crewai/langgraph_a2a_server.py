@@ -90,7 +90,7 @@ async def ask_crew_specialist(question: str) -> str:
     return await send_a2a_text_message(_crew_base_url(), question)
 
 
-def _build_graph():
+def _build_graph() -> Any:
     base_url = getenv("BASE_URL")
     model_id = getenv("MODEL_ID")
     api_key = getenv("API_KEY") or "no-key"
@@ -122,7 +122,7 @@ def _build_graph():
     )
 
 
-def _ensure_graph():
+def _ensure_graph() -> Any:
     global _graph
     if _graph is None:
         _graph = _build_graph()
