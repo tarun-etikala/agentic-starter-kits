@@ -280,6 +280,7 @@ async def _handle_chat(user_message: str, model_id: str) -> dict[str, Any]:
     global get_agent
 
     try:
+        assert get_agent is not None
         agent = get_agent()
         messages = [{"role": "user", "content": user_message}]
 
@@ -337,6 +338,7 @@ async def _handle_stream(user_message: str, model_id: str) -> StreamingResponse:
 
     async def event_generator() -> AsyncIterator[str]:
         try:
+            assert get_agent is not None
             agent = get_agent()
             messages = [{"role": "user", "content": user_message}]
 

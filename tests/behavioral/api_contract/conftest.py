@@ -20,4 +20,5 @@ def agent_url() -> str:
             "AGENT_URL env var is required for API contract tests. "
             "Set it to the base URL of a running agent."
         )
+        raise SystemExit  # unreachable; narrows type for ty
     return url

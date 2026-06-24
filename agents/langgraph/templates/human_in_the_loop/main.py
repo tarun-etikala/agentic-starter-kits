@@ -252,6 +252,7 @@ async def _handle_chat(
     global agent_graph_closure, checkpointer
 
     try:
+        assert agent_graph_closure is not None
         agent = agent_graph_closure(checkpointer)
 
         if request.approval:
@@ -362,6 +363,7 @@ async def _handle_stream(
 
     async def event_generator() -> AsyncIterator[str]:
         try:
+            assert agent_graph_closure is not None
             agent = agent_graph_closure(checkpointer)
 
             if request.approval:
