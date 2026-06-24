@@ -15,7 +15,13 @@ from fastapi.responses import (
     JSONResponse,
     StreamingResponse,
 )
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from pydantic import BaseModel, Field
@@ -187,7 +193,7 @@ def _make_completion_id() -> str:
     return f"chatcmpl-{uuid.uuid4().hex[:12]}"
 
 
-def _format_context_messages(messages: list) -> list[dict]:
+def _format_context_messages(messages: list[BaseMessage]) -> list[dict]:
     """Convert LangChain messages to OpenAI-compatible context dicts."""
     context = []
     for message in messages:

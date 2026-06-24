@@ -3,6 +3,7 @@ from typing import Any, Callable
 
 from langchain.agents import create_agent
 from langchain.agents.middleware import AgentMiddleware
+from langchain_core.messages import BaseMessage
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph.state import CompiledStateGraph
@@ -23,7 +24,7 @@ class FIFOMessageTrimmer(AgentMiddleware):
         self.max_messages = max_messages
 
     @staticmethod
-    def _drop_orphaned_tool_messages(messages: list) -> list:
+    def _drop_orphaned_tool_messages(messages: list[BaseMessage]) -> list[BaseMessage]:
         """Remove leading tool messages that lost their preceding ai tool_calls."""
         while messages and messages[0].type == "tool":
             messages = messages[1:]
