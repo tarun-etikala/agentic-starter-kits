@@ -278,7 +278,6 @@ async def _handle_chat(user_message: str, model_id: str):
     global get_agent
 
     try:
-        assert get_agent is not None
         agent = get_agent()
         messages = [{"role": "user", "content": user_message}]
 
@@ -336,7 +335,6 @@ async def _handle_stream(user_message: str, model_id: str):
 
     async def event_generator():
         try:
-            assert get_agent is not None
             agent = get_agent()
             messages = [{"role": "user", "content": user_message}]
 

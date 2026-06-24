@@ -131,7 +131,7 @@ def ai_stream_service(
 
             return execute_response
 
-    def generate_stream(context) -> Generator[dict, None, None]:
+    def generate_stream(context) -> Generator[dict, ..., ...]:
         headers = context.get_headers()
         is_assistant = headers.get("X-Ai-Interface") == "assistant"
 

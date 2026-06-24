@@ -41,7 +41,6 @@ def get_graph_closure(
     if base_url and not base_url.endswith("/v1"):
         base_url = base_url.rstrip("/") + "/v1"
 
-    assert base_url is not None
     is_local = any(host in base_url for host in ["localhost", "127.0.0.1"])
     if not is_local and not api_key:
         raise ValueError("API_KEY is required for non-local environments.")

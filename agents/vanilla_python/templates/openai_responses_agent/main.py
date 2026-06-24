@@ -192,7 +192,6 @@ async def _handle_chat(user_message: str, model_id: str):
     global get_agent
 
     try:
-        assert get_agent is not None
         agent = get_agent()
         messages = [{"role": "user", "content": user_message}]
 
@@ -254,7 +253,6 @@ async def _handle_stream(user_message: str, model_id: str):
                 queue.put_nowait((event_type, data))
 
             def run_agent():
-                assert get_agent is not None
                 adapter = get_agent()
                 agent = AIAgent(
                     model=adapter._model_id,

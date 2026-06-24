@@ -105,7 +105,6 @@ def json_schema_to_pydantic_model(
             )
         typ = prop.get("type", "string")
         enum_vals = prop.get("enum")
-        py_type = None
 
         if enum_vals is not None:
             if not enum_vals:
@@ -126,9 +125,8 @@ def json_schema_to_pydantic_model(
                         f"Unsupported JSON Schema type {typ!r} for field {name!r}"
                     )
 
-        assert py_type is not None
         field_definitions[name] = (
-            (py_type, ...) if name in required else (py_type | None, None)  # ty: ignore[unsupported-operator]
+            (py_type, ...) if name in required else (py_type | None, None)
         )
 
     return create_model(class_name, **field_definitions)
