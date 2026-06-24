@@ -70,7 +70,7 @@ def _run_crew(user_prompt: str) -> str:
     # in newer CrewAI versions (>=1.10). If a future version fixes this, remove
     # the manual wrapping below to avoid duplicate tool spans.
     for tool in tools:
-        tool._run = wrap_func_with_mlflow_trace(
+        tool._run = wrap_func_with_mlflow_trace(  # ty: ignore[invalid-assignment]
             tool._run, span_type="tool", name=tool.name
         )
 

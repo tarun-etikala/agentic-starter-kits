@@ -1,0 +1,49 @@
+# Lightweight ty config — used by PR checks and local dev.
+# Suppresses errors from third-party deps not installed and
+# framework-specific dynamic patterns (decorators, monkey-patching).
+# The comprehensive push-to-main check uses targeted per-file overrides.
+
+[rules]
+unresolved-import = "ignore"
+unresolved-attribute = "ignore"
+invalid-argument-type = "ignore"
+
+# ── Per-file overrides for framework/library quirks ──────────────────
+# These suppress errors that cannot be fixed without changing the
+# framework or library itself. Each override documents why.
+
+# CrewAI @agent/@task decorators inject constructor args from YAML config;
+# ty cannot see the decorator's runtime kwarg injection.
+[[overrides]]
+include = ["agents/crewai/templates/websearch_agent/src/crewai_web_search/crew.py"]
+rules = { missing-argument = "ignore" }
+
+# langchain_llama_stack is installed from a non-standard source and
+# lacks py.typed / stub packages.
+[[overrides]]
+include = ["agents/autogen/templates/mcp_agent/mcp_automl_template/utils.py"]
+rules = { unresolved-import = "ignore", no-matching-overload = "ignore" }
+
+# create_react_agent is deprecated in langgraph but not yet migrated
+# in this demo script.
+[[overrides]]
+include = ["agents/autogen/templates/mcp_agent/mcp_automl_template/interact_with_mcp.py"]
+rules = { deprecated = "ignore" }
+
+# litellm mistypes suppress_debug_info as Literal[False] and telemetry
+# as Literal[True] — setting them to other values is intentional.
+[[overrides]]
+include = ["agents/google/templates/adk/src/adk_agent/agent.py"]
+rules = { invalid-assignment = "ignore" }
+
+# workflow.compile() returns CompiledStateGraph with generic params that
+# don't match the bare CompiledStateGraph annotation (variance mismatch).
+[[overrides]]
+include = ["agents/langgraph/templates/agentic_rag/src/agentic_rag/agent.py"]
+rules = { invalid-return-type = "ignore" }
+
+# Monkey-patching _execute_tool_call with a broader wrapper signature
+# for mlflow tracing; intentional signature mismatch.
+[[overrides]]
+include = ["agents/autogen/templates/mcp_agent/src/autogen_agent_base/tracing.py"]
+rules = { invalid-assignment = "ignore" }
