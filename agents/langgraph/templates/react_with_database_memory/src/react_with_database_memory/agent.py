@@ -23,20 +23,20 @@ class FIFOMessageTrimmer(AgentMiddleware):
         self.max_messages = max_messages
 
     @staticmethod
-    def _drop_orphaned_tool_messages(messages) -> list:
+    def _drop_orphaned_tool_messages(messages: list) -> list:
         """Remove leading tool messages that lost their preceding ai tool_calls."""
         while messages and messages[0].type == "tool":
             messages = messages[1:]
         return messages
 
-    def wrap_model_call(self, request, handler) -> Any:
+    def wrap_model_call(self, request: Any, handler: Any) -> Any:
         messages = request.messages
         if len(messages) > self.max_messages:
             messages = messages[-self.max_messages :]
             messages = self._drop_orphaned_tool_messages(messages)
         return handler(request.override(messages=messages))
 
-    async def awrap_model_call(self, request, handler) -> Any:
+    async def awrap_model_call(self, request: Any, handler: Any) -> Any:
         messages = request.messages
         if len(messages) > self.max_messages:
             messages = messages[-self.max_messages :]
@@ -91,7 +91,9 @@ def get_graph_closure(
     max_messages_in_context = 5
 
     def get_graph(
-        memory: BaseCheckpointSaver, thread_id=None, system_prompt=default_system_prompt
+        memory: BaseCheckpointSaver,
+        thread_id: str | None = None,
+        system_prompt: str = default_system_prompt,
     ) -> CompiledStateGraph:
         """Get compiled graph with overwritten system prompt, if provided"""
 

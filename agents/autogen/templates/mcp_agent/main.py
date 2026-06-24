@@ -308,7 +308,7 @@ def _tool_invocations_from_task_messages(messages: Any) -> list[dict[str, Any]]:
 
 @app.post(
     "/chat/completions",
-    response_model=None,
+    response_model=ChatResponse,
     summary="Create chat completion",
     description=(
         "Creates a model response for the given chat conversation. "
@@ -421,7 +421,7 @@ async def chat(request: ChatRequest):
 
 @app.get(
     "/health",
-    response_model=None,
+    response_model=HealthResponse,
     summary="Health check",
     description=(
         "Returns 200 when the MCP-backed agent is ready; 503 with `not_ready` until initialization completes "

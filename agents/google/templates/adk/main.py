@@ -185,14 +185,12 @@ def _extract_text_from_events(events: list) -> str:
 
 @app.post(
     "/chat/completions",
-    response_model=None,
+    response_model=ChatCompletionResponse,
     summary="Create chat completion",
     description="Creates a model response for the given chat conversation. When `stream=false`, returns a complete `chat.completion` JSON object. When `stream=true`, returns Server-Sent Events with `chat.completion.chunk` deltas.",
     tags=["Chat"],
 )
-async def chat_completions(
-    request: ChatCompletionRequest,
-):
+async def chat_completions(request: ChatCompletionRequest):
     global runner
 
     if runner is None:
@@ -431,7 +429,9 @@ async def _handle_stream(user_content: str, model_id: str) -> StreamingResponse:
     )
 
 
-@app.get("/health", response_model=None, summary="Health check", tags=["Health"])
+@app.get(
+    "/health", response_model=HealthResponse, summary="Health check", tags=["Health"]
+)
 async def health():
     initialized = runner is not None
     body = {

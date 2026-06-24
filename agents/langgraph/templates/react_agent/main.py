@@ -187,14 +187,12 @@ def _make_completion_id() -> str:
 
 @app.post(
     "/chat/completions",
-    response_model=None,
+    response_model=ChatCompletionResponse,
     summary="Create chat completion",
     description="Creates a model response for the given chat conversation. When `stream=false`, returns a complete `chat.completion` JSON object. When `stream=true`, returns Server-Sent Events with `chat.completion.chunk` deltas.",
     tags=["Chat"],
 )
-async def chat_completions(
-    request: ChatCompletionRequest,
-):
+async def chat_completions(request: ChatCompletionRequest):
     global agent_graph
 
     if agent_graph is None:
@@ -413,7 +411,9 @@ async def _handle_stream(
     )
 
 
-@app.get("/health", response_model=None, summary="Health check", tags=["Health"])
+@app.get(
+    "/health", response_model=HealthResponse, summary="Health check", tags=["Health"]
+)
 async def health():
     initialized = agent_graph is not None
     body = {

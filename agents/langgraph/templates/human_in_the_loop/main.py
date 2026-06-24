@@ -215,7 +215,7 @@ def _format_context_messages(messages) -> list[dict]:
 
 @app.post(
     "/chat/completions",
-    response_model=None,
+    response_model=ChatCompletionResponse,
     summary="Create chat completion",
     description=(
         "Creates a model response for the given chat conversation. "
@@ -226,9 +226,7 @@ def _format_context_messages(messages) -> list[dict]:
     ),
     tags=["Chat"],
 )
-async def chat_completions(
-    request: ChatCompletionRequest,
-):
+async def chat_completions(request: ChatCompletionRequest):
     global agent_graph_closure, checkpointer
 
     if agent_graph_closure is None:
@@ -540,7 +538,9 @@ async def _handle_stream(
     )
 
 
-@app.get("/health", response_model=None, summary="Health check", tags=["Health"])
+@app.get(
+    "/health", response_model=HealthResponse, summary="Health check", tags=["Health"]
+)
 async def health():
     initialized = agent_graph_closure is not None
     body = {

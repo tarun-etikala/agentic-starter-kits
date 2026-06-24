@@ -187,7 +187,7 @@ def _make_completion_id() -> str:
     return f"chatcmpl-{uuid.uuid4().hex[:12]}"
 
 
-def _format_context_messages(messages) -> list[dict]:
+def _format_context_messages(messages: list) -> list[dict]:
     """Convert LangChain messages to OpenAI-compatible context dicts."""
     context = []
     for message in messages:
@@ -222,14 +222,12 @@ def _format_context_messages(messages) -> list[dict]:
 
 @app.post(
     "/chat/completions",
-    response_model=None,
+    response_model=ChatCompletionResponse,
     summary="Create chat completion",
     description="Creates a model response for the given chat conversation. When `stream=false`, returns a complete `chat.completion` JSON object. When `stream=true`, returns Server-Sent Events with `chat.completion.chunk` deltas. Supports `thread_id` for conversation persistence.",
     tags=["Chat"],
 )
-async def chat_completions(
-    request: ChatCompletionRequest,
-):
+async def chat_completions(request: ChatCompletionRequest):
     global agent_graph_closure, DB_URI
 
     if agent_graph_closure is None:
@@ -467,7 +465,9 @@ async def _handle_stream(
     )
 
 
-@app.get("/health", response_model=None, summary="Health check", tags=["Health"])
+@app.get(
+    "/health", response_model=HealthResponse, summary="Health check", tags=["Health"]
+)
 async def health():
     initialized = agent_graph_closure is not None
     body = {

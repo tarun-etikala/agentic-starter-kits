@@ -169,14 +169,12 @@ def _make_completion_id() -> str:
 
 @app.post(
     "/chat/completions",
-    response_model=None,
+    response_model=ChatCompletionResponse,
     summary="Create chat completion",
     description="Creates a model response for the given chat conversation. When `stream=false`, returns a complete `chat.completion` JSON object. When `stream=true`, returns Server-Sent Events with `chat.completion.chunk` deltas.",
     tags=["Chat"],
 )
-async def chat_completions(
-    request: ChatCompletionRequest,
-):
+async def chat_completions(request: ChatCompletionRequest):
     global get_agent
 
     if get_agent is None:
@@ -398,7 +396,9 @@ def _map_event_to_chunk(
     return None
 
 
-@app.get("/health", response_model=None, summary="Health check", tags=["Health"])
+@app.get(
+    "/health", response_model=HealthResponse, summary="Health check", tags=["Health"]
+)
 async def health():
     initialized = get_agent is not None
     body = {
@@ -411,15 +411,13 @@ async def health():
 
 
 # ── Playground API aliases (so the same index.html works in both modes) ───────
-@app.get("/api/health", response_model=None, include_in_schema=False)
+@app.get("/api/health", response_model=HealthResponse, include_in_schema=False)
 async def api_health():
     return await health()
 
 
-@app.post("/api/chat", include_in_schema=False, response_model=None)
-async def api_chat(
-    request: ChatCompletionRequest,
-):
+@app.post("/api/chat", include_in_schema=False)
+async def api_chat(request: ChatCompletionRequest):
     return await chat_completions(request)
 
 

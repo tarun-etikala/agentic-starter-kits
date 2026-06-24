@@ -1,10 +1,11 @@
 from os import getenv
-from typing import Annotated, Any, Callable, Sequence
+from typing import Annotated, Callable, Sequence
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 from typing_extensions import TypedDict
 
@@ -176,7 +177,9 @@ Answer[start response with 'based on provided documents]:"""
                 ]
             }
 
-    def get_graph(instruction_prompt: SystemMessage | None = None) -> Any:
+    def get_graph(
+        instruction_prompt: SystemMessage | None = None,
+    ) -> CompiledStateGraph:
         """Create and compile the RAG workflow graph.
 
         Args:
