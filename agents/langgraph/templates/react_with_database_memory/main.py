@@ -260,6 +260,7 @@ async def _handle_chat(
     global agent_graph_closure, DB_URI
 
     try:
+        assert agent_graph_closure is not None
         async with AsyncPostgresSaver.from_conn_string(DB_URI) as saver:
             await saver.setup()
 
@@ -333,6 +334,7 @@ async def _handle_stream(
 
     async def event_generator():
         try:
+            assert agent_graph_closure is not None
             async with AsyncPostgresSaver.from_conn_string(DB_URI) as saver:
                 await saver.setup()
 

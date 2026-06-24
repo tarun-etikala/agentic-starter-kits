@@ -1,0 +1,9 @@
+# Lightweight ty config — used by PR checks and local dev.
+# Suppresses errors from third-party deps not installed and
+# framework-specific dynamic patterns (decorators, monkey-patching).
+# The comprehensive push-to-main check overrides these with --error all.
+
+[rules]
+unresolved-import = "ignore"
+unresolved-attribute = "ignore"
+invalid-argument-type = "ignore"
