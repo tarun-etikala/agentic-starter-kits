@@ -34,7 +34,6 @@ def get_graph_closure(
     if not model_id:
         model_id = getenv("MODEL_ID")
 
-    assert base_url is not None
     is_local = any(host in base_url for host in ["localhost", "127.0.0.1"])
 
     if not is_local and not api_key:

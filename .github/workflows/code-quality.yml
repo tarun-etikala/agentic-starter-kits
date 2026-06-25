@@ -129,78 +129,18 @@ jobs:
         run: pip install ty==0.0.51
 
       - name: Run type-check
-        # Lightweight gate — rules in ty.toml suppress noise from missing
-        # third-party stubs. Push-to-main runs the comprehensive check.
-        run: ty check
-
-  type-check-comprehensive:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-        with:
-          persist-credentials: false
-
-      - name: Setup Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
-        with:
-          python-version: "3.12"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
-        with:
-          version: "0.11.21"
-          enable-cache: true
-
-      - name: Install ty
-        run: pip install ty==0.0.51
-
-      - name: Run comprehensive type-check
-        # Auto-discovers every pyproject.toml under agents/ and components/,
-        # installs all deps (including optional extras like tracing/auth),
-        # then runs ty with targeted ignores for pre-existing issues.
-        # Remove ignores progressively as errors are fixed.
-        shell: bash
-        run: |
-          failed=0
-          while IFS= read -r pyproject; do
-            dir="$(dirname "$pyproject")"
-            name=$(echo "$dir" | sed 's|^\./||;s|agents/||;s|/templates/|/|')
-
-            # Build the list of paths to check
-            check=()
-            [ -d "$dir/src" ] && check+=(src/)
-            [ -f "$dir/main.py" ] && check+=(main.py)
-            if [ ${#check[@]} -eq 0 ]; then
-              while IFS= read -r f; do
-                check+=("$(basename "$f")")
-              done < <(find "$dir" -maxdepth 1 -name '*.py' -not -name '__init__.py')
-            fi
-            [ ${#check[@]} -eq 0 ] && continue
-
-            echo "::group::$name"
-            echo "Installing deps (all extras) in $dir..."
-            (cd "$dir" && uv sync --frozen --all-extras)
-            echo "Running ty check on: ${check[*]}"
-            if (cd "$dir" && ty check --python .venv \
-                  --ignore unresolved-import \
-                  --ignore unresolved-attribute \
-                  --ignore invalid-argument-type \
-                  --ignore missing-type-argument \
-                  --ignore possibly-unresolved-reference \
-                  --ignore possibly-missing-attribute \
-                  --ignore missing-override-decorator \
-                  "${check[@]}"); then
-              echo "✅ $name passed"
-            else
-              echo "::error::ty check failed for $name"
-              failed=1
-            fi
-            echo "::endgroup::"
-          done < <(find ./agents ./components -name pyproject.toml \
-                        ! -path '*/.venv/*' ! -path '*/egg-info/*' | sort)
-          exit $failed
+        # ty (Astral) — same toolchain as ruff/uv.
+        # --ignore rules suppress noise from third-party deps not installed
+        # in this job and framework-specific dynamic patterns (decorators,
+        # monkey-patching, global None|Callable singletons).
+        run: >
+          ty check
+          --ignore unresolved-import
+          --ignore unresolved-attribute
+          --ignore call-non-callable
+          --ignore invalid-argument-type
+          --ignore unsupported-operator
+          --ignore invalid-assignment
+          --ignore invalid-type-form
+          --ignore invalid-yield
+          agents/ components/

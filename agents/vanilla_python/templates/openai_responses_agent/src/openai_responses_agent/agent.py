@@ -94,7 +94,7 @@ class _AIAgentAdapter:
             func = wrap_func_with_mlflow_trace(func, span_type="tool")
             agent.register_tool(name, func)
 
-        agent.query = wrap_func_with_mlflow_trace(agent.query, span_type="agent")  # ty: ignore[invalid-assignment]
+        agent.query = wrap_func_with_mlflow_trace(agent.query, span_type="agent")
         answer = await asyncio.to_thread(agent.query, question)
         if answer is None:
             answer = ""

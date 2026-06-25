@@ -13,7 +13,7 @@ def get_agent_chat(
     base_url: str | None = None,
     api_key: str | None = None,
     tools: list | None = None,
-) -> Callable[..., AssistantAgent]:
+) -> Callable[[str], AssistantAgent]:
     """Workflow generator closure using OpenAI or OpenAI-compatible API.
 
     Args:

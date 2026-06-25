@@ -178,5 +178,5 @@ def _patch_execute_tool_call() -> None:
         finally:
             span_ctx.__exit__(None, None, None)
 
-    traced_execute_tool_call._mlflow_patched = True  # type: ignore[attr-defined]
-    AssistantAgent._execute_tool_call = traced_execute_tool_call  # type: ignore[assignment]
+    traced_execute_tool_call._mlflow_patched = True
+    AssistantAgent._execute_tool_call = traced_execute_tool_call
