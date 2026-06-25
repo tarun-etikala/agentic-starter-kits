@@ -1,10 +1,9 @@
-# ty config — CI installs deps per-agent (uv sync --all-extras) so most
-# imports resolve.  Global rules suppress categories with too many
-# pre-existing errors to fix with per-file overrides today.
-# Remove these as errors are fixed.
+# ty config — run `make env` (or uv sync --all-extras) in each agent
+# directory before running ty locally so imports resolve.
+# Global rules suppress categories with too many pre-existing errors
+# to fix with per-file overrides today.  Remove as errors are fixed.
 
 [rules]
-unresolved-import = "ignore"
 unresolved-attribute = "ignore"
 invalid-argument-type = "ignore"
 
@@ -53,3 +52,20 @@ include = [
     "agents/a2a/templates/langgraph_crewai_agent/src/a2a_langgraph_crewai/crew_a2a_server.py",
 ]
 rules = { invalid-assignment = "ignore" }
+
+# LangChain response objects use dynamic attributes (tool_calls, content)
+# that ty cannot resolve statically.
+[[overrides]]
+include = ["agents/langgraph/templates/*/examples/ai_service.py"]
+rules = { not-subscriptable = "ignore" }
+
+# Example script uses sibling-file imports (run from examples/ dir at
+# runtime); ty cannot resolve them from the repo root.
+[[overrides]]
+include = ["agents/langgraph/templates/react_with_database_memory/examples/execute_ai_service_locally.py"]
+rules = { unresolved-import = "ignore" }
+
+# CI-only script — github package not installed in agent venvs.
+[[overrides]]
+include = [".github/scripts/*.py"]
+rules = { unresolved-import = "ignore" }
