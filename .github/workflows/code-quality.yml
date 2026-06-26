@@ -165,7 +165,7 @@ jobs:
               continue
             fi
             echo "Running ty check on: ${check[*]}"
-            if ty check --python "$dir/.venv" "${check[@]}"; then
+            if ty check --python "$dir/.venv" --error unresolved-import "${check[@]}"; then
               echo "✅ $name passed"
             else
               echo "::error::ty check failed for $name"

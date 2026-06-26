@@ -1,9 +1,10 @@
-# ty config — run `make env` (or uv sync --all-extras) in each agent
-# directory before running ty locally so imports resolve.
-# Global rules suppress categories with too many pre-existing errors
-# to fix with per-file overrides today.  Remove as errors are fixed.
+# ty config for local dev and CI.
+# Global rules suppress noise when deps are not installed (local dev).
+# CI overrides unresolved-import via --error so it validates imports
+# against installed deps.
 
 [rules]
+unresolved-import = "ignore"
 unresolved-attribute = "ignore"
 invalid-argument-type = "ignore"
 
