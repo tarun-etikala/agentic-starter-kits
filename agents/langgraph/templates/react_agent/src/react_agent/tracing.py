@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 from os import getenv
 from typing import Optional
@@ -28,6 +29,53 @@ def check_mlflow_health(
 
     mlflow_health_endpoint = "/health"
     mlflow_url = f"{mlflow_tracking_uri.rstrip('/')}{mlflow_health_endpoint}"
+
+    # Build auth and TLS config. This is only needed for
+    # the raw requests.get() health check. The MLflow client SDK
+    # handles these env vars natively for all other calls.
+    # See docs/mlflow-openshift-auth-and-tls.md for full details.
+    headers = {}
+    token = getenv("MLFLOW_TRACKING_TOKEN")
+    tracking_auth = getenv("MLFLOW_TRACKING_AUTH", "")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+        logger.debug("[Health Check] Using MLFLOW_TRACKING_TOKEN for authentication")
+    elif tracking_auth in ("kubernetes", "kubernetes-namespaced"):
+        sa_token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        if not os.path.isfile(sa_token_path):
+            logger.warning(
+                "[Health Check] MLFLOW_TRACKING_AUTH=%s but SA token not found at %s",
+                tracking_auth,
+                sa_token_path,
+            )
+        else:
+            with open(sa_token_path) as f:
+                headers["Authorization"] = f"Bearer {f.read().strip()}"
+            logger.debug(
+                "[Health Check] Using MLFLOW_TRACKING_AUTH=%s for authentication",
+                tracking_auth,
+            )
+
+    cert_path = getenv("MLFLOW_TRACKING_SERVER_CERT_PATH")
+    if getenv("MLFLOW_TRACKING_INSECURE_TLS", "").lower() in ("true", "1", "yes"):
+        verify = False
+        logger.warning(
+            "[Health Check] TLS verification disabled (MLFLOW_TRACKING_INSECURE_TLS=true). "
+            "Consider using MLFLOW_TRACKING_SERVER_CERT_PATH instead."
+        )
+    elif cert_path:
+        if not os.path.isfile(cert_path):
+            logger.warning(
+                "[Health Check] MLFLOW_TRACKING_SERVER_CERT_PATH does not exist: %s — falling back to system CAs",
+                cert_path,
+            )
+            verify = True
+        else:
+            verify = cert_path
+            logger.debug("[Health Check] TLS verify using cert: %s", cert_path)
+    else:
+        verify = True
+
     start_time = time.time()
 
     while True:
@@ -41,7 +89,9 @@ def check_mlflow_health(
             )
 
         try:
-            response = requests.get(mlflow_url, timeout=min(5, remaining))
+            response = requests.get(
+                mlflow_url, timeout=min(5, remaining), headers=headers, verify=verify
+            )
             if response.status_code == 200:
                 logger.info(
                     f"MLflow health check passed at {mlflow_url} with status code {response.status_code}."
