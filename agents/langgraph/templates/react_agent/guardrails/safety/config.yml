@@ -1,0 +1,32 @@
+models:
+  - type: main
+    engine: openai
+    model: llama3.1:8b
+    parameters:
+      base_url: http://localhost:11434/v1
+      api_key: not-needed
+
+  - type: content_safety
+    engine: openai
+    model: llama3.1:8b
+    parameters:
+      base_url: http://localhost:11434/v1
+      api_key: not-needed
+
+  - type: topic_control
+    engine: openai
+    model: llama3.1:8b
+    parameters:
+      base_url: http://localhost:11434/v1
+      api_key: not-needed
+
+rails:
+  input:
+    flows:
+      - content safety check input $model=content_safety
+      - topic safety check input $model=topic_control
+  output:
+    flows:
+      - content safety check output $model=content_safety
+    streaming:
+      enabled: True
