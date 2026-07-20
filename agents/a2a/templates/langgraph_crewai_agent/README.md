@@ -295,7 +295,7 @@ The LangGraph pod uses in-cluster **`CREW_A2A_URL=http://a2a-crew-agent:8080`**.
 
 #### Manage Agents using Kagenti (Optional)
 
-Register agents with [Kagenti](https://github.com/kagenti/kagenti) for unified discovery and management.
+Register agents with [Kagenti](https://github.com/rossoctl/rossoctl) for unified discovery and management.
 
 **Prerequisites:**
 
