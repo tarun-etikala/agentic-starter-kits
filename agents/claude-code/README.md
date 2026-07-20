@@ -81,7 +81,7 @@ Follow **one** option below, then continue to [Using Claude Code](#using-claude-
 
 #### Get your API key
 
-1. Go to [console.anthropic.com](https://console.anthropic.com/)
+1. Go to [console.anthropic.com](https://platform.claude.com/)
 2. Sign in or create an account
 3. Navigate to **API Keys** and click **Create Key**
 4. Copy the key (starts with `sk-ant-api03-...`)
