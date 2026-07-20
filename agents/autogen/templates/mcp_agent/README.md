@@ -1,6 +1,6 @@
 <div style="text-align: center;">
 
-![AutoGen Logo](/images/autogen_logo.svg)
+<img src="/images/autogen_logo.svg" alt="AutoGen Logo" width="200">
 
 # AutoGen Agent (MCP)
 
