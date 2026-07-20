@@ -22,8 +22,9 @@ retry_wait_time = 2
 # Do not check email addresses
 include_mail = false
 
-# Custom user agent
-user_agent = "lychee/agentic-starter-kits-link-checker"
+# Use curl-style user agent — docs.redhat.com and docs.openshift.com block
+# non-curl UAs (403), but allow curl/X.Y.Z through
+user_agent = "curl/8.7.1"
 
 # Skip virtual environments and vendored dependencies
 exclude_path = ["\\.venv", "node_modules"]
@@ -31,21 +32,16 @@ exclude_path = ["\\.venv", "node_modules"]
 # Domain-scoped exclusions — only skip URLs we've confirmed are false positives.
 # Do NOT add a global `accept = [403]` — we want new broken links to surface.
 exclude = [
-    # Known bot-blocking sites (return 403 to automated requests)
-    "^https://docs\\.openshift\\.com",
-    "^https://docs\\.redhat\\.com",
+    # Bot-blocking site
     "^https://developer\\.nps\\.gov",
 
     # Localhost URLs (expected in dev docs)
     "^http://localhost",
     "^http://127\\.0\\.0\\.1",
 
-    # Rate-limited sites
+    # TLS handshake/timeout issues with lychee
     "^https://www\\.gnu\\.org",
 
-    # Wayback Machine (intermittent 5xx errors)
-    "^https?://web\\.archive\\.org",
-
-    # Milvus docs (infinite 302 redirect loop)
+    # milvus.io/docs — returns 403 to all automated requests
     "^https://milvus\\.io/docs",
 ]
