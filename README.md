@@ -1,6 +1,6 @@
 <div style="text-align: center;">
 
-<img src="/images/ask_logo.png" alt="Agentic Starter Kits" width="100" height="100">
+<img src="/images/ask_logo.png" alt="Agentic Starter Kits" width="200" height="200">
 
 # Agentic Starter Kits
 
