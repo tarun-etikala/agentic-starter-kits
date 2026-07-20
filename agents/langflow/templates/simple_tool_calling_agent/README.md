@@ -37,7 +37,7 @@ national park data) and reasons over the results to answer user questions. Inclu
   stack
 - [GNU Make](https://www.gnu.org/software/make/) and a bash-compatible shell — on Windows,
   use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) (recommended)
-  or [Git Bash](https://git-scm.com/downloads/)
+  or [Git Bash](https://git-scm.com/install/)
 
 ### Installing Podman
 

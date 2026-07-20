@@ -24,7 +24,7 @@ connector to route inference through a OGX server's OpenAI-compatible API endpoi
 - [Helm](https://helm.sh/) — for deploying to Kubernetes/OpenShift
 - [GNU Make](https://www.gnu.org/software/make/) and a bash-compatible shell — on Windows,
   use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) (recommended)
-  or [Git Bash](https://git-scm.com/downloads/)
+  or [Git Bash](https://git-scm.com/install/)
 
 ## Local Development
 
