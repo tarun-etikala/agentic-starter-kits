@@ -60,7 +60,7 @@ See: [Create workbench with connections attached](https://github.com/red-hat-dat
 - Download the dataset (e.g. [WA_FnUseC_TelcoCustomerChurn.csv](https://github.com/red-hat-data-services/red-hat-ai-examples/blob/main/examples/automl/data/churn/input_data/WA_FnUseC_TelcoCustomerChurn.csv) for churn).
 - Upload it to the bucket used by the **training data** connection. Note the **bucket name** and **object key** (path) for the pipeline run.
 
-See: [Upload the training dataset to S3](https://github.com/red-hat-data-services/red-hat-ai-examples/blob/main/examples/automl/churn_prediction_tutorial.md#-optional-upload-the-training-dataset-to-s3).
+See: [Upload the training dataset to S3](https://github.com/red-hat-data-services/red-hat-ai-examples/blob/main/examples/automl/churn_prediction_tutorial.md#upload-the-training-dataset-to-s3).
 
 ### 1.6 Add the AutoML pipeline and run it
 
