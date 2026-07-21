@@ -38,7 +38,7 @@ jobs:
         run: ruff format --check .
 
       - name: Markdownlint
-        # v24.0.0 bundles markdownlint-cli2 0.23.0 — keep in sync with .pre-commit-config.yaml
+        # v24.1.0 bundles markdownlint-cli2 0.23.1 — keep in sync with .pre-commit-config.yaml
         uses: DavidAnson/markdownlint-cli2-action@6bf21b07787794f89a243495939cd651942aeabe  # v24.1.0
         with:
           globs: "**/*.md"
