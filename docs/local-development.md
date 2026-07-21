@@ -119,3 +119,5 @@ To install an agent's dependencies locally:
 cd agents/langgraph/templates/react_agent
 uv pip install -e ".[dev]"
 ```
+
+<!-- lychee test: no broken links -->
