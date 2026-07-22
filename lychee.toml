@@ -27,7 +27,8 @@ include_mail = false
 user_agent = "curl/8.7.1"
 
 # Skip virtual environments and vendored dependencies
-exclude_path = ["\\.venv", "node_modules"]
+# PR template links resolve from repo root in GitHub but from .github/ locally
+exclude_path = ["\\.venv", "node_modules", "\\.github/PULL_REQUEST_TEMPLATE\\.md"]
 
 # Domain-scoped exclusions — only skip URLs we've confirmed are false positives.
 # Do NOT add a global `accept = [403]` — we want new broken links to surface.
