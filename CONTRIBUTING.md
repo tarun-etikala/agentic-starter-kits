@@ -137,6 +137,15 @@ Runs `uv lock` on any modified `pyproject.toml` and auto-updates the correspondi
 
 Validates `.github/workflows/` files using [actionlint](https://github.com/rhysd/actionlint). Only runs when workflow files are staged.
 
+### Link checking (lychee)
+
+Checks `.md` files for broken links using [lychee](https://github.com/lycheeverse/lychee). Runs on staged markdown files only. Configuration is in [`lychee.toml`](lychee.toml). Requires lychee in `$PATH`:
+
+```bash
+brew install lychee      # macOS
+cargo install lychee     # Linux / other
+```
+
 ## Linting and formatting
 
 This project uses [ruff](https://docs.astral.sh/ruff/) for Python linting and formatting, [markdownlint](https://github.com/DavidAnson/markdownlint) for Markdown linting, and [actionlint](https://github.com/rhysd/actionlint) for GitHub Actions workflow validation. All three run as blocking CI checks on every pull request via the `Code Quality` workflow, and locally via the [pre-commit hooks](#pre-commit-hooks) described above.
