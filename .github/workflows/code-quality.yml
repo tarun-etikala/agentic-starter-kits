@@ -49,6 +49,44 @@ jobs:
         with:
           version: 1.7.12
 
+  link-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Determine files to check
+        id: files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            changed=$(gh pr diff ${{ github.event.pull_request.number }} --name-only | grep '\.md$' | tr '\n' ' ' || true)
+            if [ -z "${changed// /}" ]; then
+              echo "No markdown files changed — skipping link check"
+              echo "targets=" >> "$GITHUB_OUTPUT"
+            else
+              echo "Checking changed markdown files: $changed"
+              echo "targets=$changed" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "targets='./**/*.md'" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Link check (lychee)
+        if: steps.files.outputs.targets != ''
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8  # v2
+        with:
+          args: "--config lychee.toml --no-progress ${{ steps.files.outputs.targets }}"
+          token: ${{ github.token }}
+          fail: true
+          jobSummary: true
+
   lockfile-check:
     runs-on: ubuntu-latest
     permissions:
@@ -209,7 +247,7 @@ jobs:
       github.event_name != 'pull_request' &&
       github.repository == 'red-hat-data-services/agentic-starter-kits' &&
       (github.event_name != 'workflow_dispatch' || github.ref_name == 'main')
-    needs: [lint, lockfile-check, secret-scanning, type-check, github-scripts-tests]
+    needs: [lint, link-check, lockfile-check, secret-scanning, type-check, github-scripts-tests]
     runs-on: ubuntu-latest
     permissions:
       contents: read
